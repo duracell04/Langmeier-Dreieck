@@ -4,7 +4,7 @@ const DB_VERSION = 1;
 const STORE_META = "meta";
 const STORE_EVENTS = "events";
 
-export type MetaKey = "deviceId" | "studentRef" | "sessionId";
+export type MetaKey = "deviceId" | "studentRef" | "sessionId" | "activeSession";
 
 interface MetaRecord {
   key: MetaKey;
