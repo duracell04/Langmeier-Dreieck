@@ -1,0 +1,9 @@
+{
+  "name": "@triangle/payments",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "node -e \"console.log('payments dev not configured')\"",
+    "build": "node -e \"console.log('payments build not configured')\""
+  }
+}
