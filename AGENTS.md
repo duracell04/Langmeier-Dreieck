@@ -1,4 +1,4 @@
-# AGENTS.md — Langmeier-Dreieck (Triangle 1×1) Engineering Rules
+﻿# AGENTS.md -- Langmeier-Dreieck (Triangle 1x1) Engineering Rules
 
 This file defines how autonomous/dev agents must work in this repo: architecture contracts, safety/privacy constraints, and execution order. Treat this as **source-of-truth** for implementation decisions.
 
@@ -14,7 +14,7 @@ Offline-first PWA that digitises the Langmeier-Dreieck pedagogy: **ProductFamili
 ### 1.1 Event log is the source of truth
 - Student activity is recorded as **immutable, append-only events**.
 - Derived state (mastery, aggregates) must be **recomputable** from events.
-- Never “sync mastery state” as authoritative; sync events.
+- Never "sync mastery state" as authoritative; sync events.
 
 ### 1.2 Strict schema versioning
 - Every event has a `version`.
@@ -97,18 +97,18 @@ Agents must implement in this order:
 5) **Teacher dashboard**
    - consumes aggregates (bottlenecks/confusions/groups)
 6) **Simulation + tests**
-   - mastery simulation to prevent “stuck forever”
-   - E2E offline→sync test
+   - mastery simulation to prevent "stuck forever"
+   - E2E offline->sync test
 
 Do not jump ahead to payments/LTI until contracts + offline loop are stable.
 
 ---
 
-## 4) Pedagogy → software rules (must be preserved)
+## 4) Pedagogy -> software rules (must be preserved)
 
 ### 4.1 Product-centred
 - Product is the anchor; tasks are generated from ProductFamilies.
-- `ProductFamily = { product, factorPairs[] }` (no “primary factors” in logic).
+- `ProductFamily = { product, factorPairs[] }` (no "primary factors" in logic).
 
 ### 4.2 Role-based tasks
 - A Task is defined by:
@@ -117,8 +117,8 @@ Do not jump ahead to payments/LTI until contracts + offline loop are stable.
 
 ### 4.3 Division semantics
 - Support both:
-  - quotitive: `product ÷ divisor = quotient` (missing quotient)
-  - partitive: `product ÷ quotient = divisor` (missing divisor)
+  - quotitive: `product / divisor = quotient` (missing quotient)
+  - partitive: `product / quotient = divisor` (missing divisor)
 - UI must encode division asymmetry by **locking the given element**.
 
 ### 4.4 Cognitive load / aids
@@ -137,7 +137,7 @@ Do not jump ahead to payments/LTI until contracts + offline loop are stable.
 ### 5.1 Client behaviour
 - Always write events locally first (IndexedDB).
 - Sync opportunistically:
-  - upload “events since lastAck”
+  - upload "events since lastAck"
   - retry safely (idempotent)
 - Never delete local events until acked.
 
@@ -194,7 +194,7 @@ Do not jump ahead to payments/LTI until contracts + offline loop are stable.
 
 ## 8) Public repo hygiene (if repo is public)
 - Do not commit proprietary curriculum content unless approved.
-- Avoid “official” brand claims in code/comments unless contract permits.
+- Avoid "official" brand claims in code/comments unless contract permits.
 - Keep any school data strictly local in dev; never upload real student data.
 
 ---
