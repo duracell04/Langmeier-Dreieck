@@ -1,0 +1,14 @@
+﻿{
+  "app.title": "Dreieck 1×1",
+  "join.title": "Klasse beitreten",
+  "join.codeLabel": "Code",
+  "join.scanHint": "QR-Code scannen oder Code eingeben",
+  "mode.learn": "Lernen",
+  "mode.test": "Test",
+  "practice.tryAgain": "Nochmal versuchen",
+  "practice.showStructure": "Struktur zeigen?",
+  "practice.familyGlance": "Faktor-Familie",
+  "session.done": "Fertig!",
+  "session.summary": "Übersicht",
+  "session.continueTomorrow": "Morgen weitermachen"
+}
