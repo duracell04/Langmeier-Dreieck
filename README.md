@@ -254,6 +254,10 @@ See `/services/api/src/middleware/` and `/docs/lti.md`.
 | LTI 1.3 | later | server middleware required |
 | Native wrappers | later | only if app-store discovery needed |
 
+**Important:** Payments/monetization/paywall are intentionally out of scope
+for the pilot/MVP. The current `services/payments` area is a placeholder only
+and should not be implemented until after pilot rollout and validated traction.
+
 ---
 
 ## References (design basis)
