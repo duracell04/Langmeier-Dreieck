@@ -1,0 +1,17 @@
+# .codex/config.toml
+
+# Make sure Codex can load more layered AGENTS content before truncating.
+project_doc_max_bytes = 65536
+project_doc_read_max_bytes = 65536
+
+# Keep fallback discovery enabled (default is usually true, but be explicit).
+project_doc_fallback_enabled = true
+
+# Optional: add your own instruction filenames if you want.
+# (AGENTS.md is already supported; this is for extra "instruction" files)
+project_doc_fallback_filenames = [
+  "AGENTS.md",
+  "AGENTS.override.md",
+  "instructions.md",
+  "ai_instructions.md"
+]
