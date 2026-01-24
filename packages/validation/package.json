@@ -1,0 +1,13 @@
+﻿{
+  "name": "@triangle/validation",
+  "private": true,
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "node -e \"console.log('validation build not configured')\""
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}
