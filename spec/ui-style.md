@@ -39,6 +39,14 @@ Rules:
   - wrong(2) scaffold = `--c-info`
   - technical error = `--c-danger` only
 
+### 1.1 Tailwind usage (semantic utilities only)
+- Use semantic utilities mapped to tokens via `tailwind.preset.cjs`:
+  - `bg-bg`, `bg-surface`, `border-border`
+  - `text-text-primary`, `text-text-secondary`
+  - `text-primary`, `text-success`, `text-warning`, `text-info`, `text-danger`
+  - `text-product`, `text-factor`
+- Never use raw palette utilities (e.g., `text-red-600`, `bg-blue-500`).
+
 ---
 
 ## 2) Typography
@@ -53,8 +61,8 @@ Rules:
 - Prefer neutral verbs: "Weiter", "Nochmal versuchen".
 
 Recommended usage:
-- Product number: `--text-4xl` or larger
-- Factors: `--text-xl` to `--text-3xl`
+- Product number: `text-product` (or `--text-4xl`+)
+- Factors: `text-factor` (or `--text-xl` to `--text-3xl`)
 - Micro status: `--text-xs` / `--text-sm`
 
 ---
@@ -65,6 +73,7 @@ Rules:
 - Touch targets >= 44px.
 - Use `--space-*` tokens only.
 - Triangle centered; keypad bottom, thumb-friendly.
+- No arbitrary Tailwind values (avoid `p-[13px]`, `gap-[11px]`).
 
 No "dense" UI:
 - Prefer breathing room over information density.

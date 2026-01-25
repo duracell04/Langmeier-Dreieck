@@ -2,6 +2,7 @@
 import { createRoot } from "react-dom/client";
 import { Join } from "./routes/Join";
 import { Practice } from "./routes/Practice";
+import "./styles/app.css";
 
 const rootEl = document.getElementById("root");
 if (!rootEl) {
