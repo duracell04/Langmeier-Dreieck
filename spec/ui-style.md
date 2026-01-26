@@ -28,7 +28,7 @@ If you add a new UI pattern, update this file in the same PR.
 
 ## 1) Design tokens (single source of truth)
 
-**File:** `apps/student-pwa/src/styles/tokens.css`
+**File:** `packages/theme/tokens.css`
 
 Rules:
 - UI code may use `var(--c-...)` tokens only.

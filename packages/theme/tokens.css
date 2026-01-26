@@ -1,0 +1,89 @@
+:root {
+  /* Core palette */
+  --c-bg: #f7f6f2;
+  --c-surface: #ffffff;
+  --c-border: #d9d5cf;
+  --c-text-primary: #1f2429;
+  --c-text-secondary: #4a525a;
+  --c-primary: #2f6f7a;
+  --c-success: #3f7a5a;
+  --c-warning: #b6782d;
+  --c-info: #3f6fa1;
+  --c-danger: #b24a4a;
+
+  /* Swiss semantic palette */
+  --c-app-bg: var(--c-bg);
+  --c-product-text: var(--c-text-primary);
+  --c-factor-text: var(--c-text-secondary);
+  --c-muted-text: var(--c-text-secondary);
+  --c-grid-border: #dddddd;
+  --c-grid-bg: #ffffff;
+  --c-grid-fill: #f3f3f3;
+  --c-focus: var(--c-primary);
+  --c-status-success: var(--c-success);
+  --c-status-error: var(--c-danger);
+
+  --font-main: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-sans: var(--font-main);
+
+  /* Rhythm / geometry */
+  --space-unit: 4px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-swiss: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --border-width: 1px;
+
+  --sz-triangle: min(84vw, 22rem);
+  --sz-structure-grid: 240px;
+  --sz-touch: 44px;
+
+  /* Typography intent */
+  --fz-product: clamp(3rem, 7vw, 4.5rem);
+  --lh-product: 1.05;
+  --fz-factor: clamp(2rem, 5vw, 3.25rem);
+  --lh-factor: 1.05;
+  --fz-operator: clamp(1.5rem, 3.5vw, 2.25rem);
+  --lh-operator: 1;
+  --fz-micro: 0.75rem;
+  --lh-micro: 1.2;
+
+  /* Existing text sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+
+  /* Motion */
+  --ease-swiss: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 240ms;
+  --duration-slow: 360ms;
+  --duration-standard: var(--duration-normal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-standard: 0ms;
+  }
+}

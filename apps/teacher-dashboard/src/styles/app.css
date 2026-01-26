@@ -1,6 +1,6 @@
 @config "../../tailwind.config.cjs";
+@import "@triangle/theme/tokens.css";
 @import "tailwindcss";
-@import "./tokens.css";
 
 @layer base {
   html,

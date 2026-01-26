@@ -1,4 +1,10 @@
-﻿import React from "react";
+import React from "react";
+import {
+  TriangleDisplay,
+  type TriangleOperation,
+  type TriangleSlot,
+  type TriangleStatus,
+} from "@triangle/ui-kit";
 
 type Slot = "product" | "left" | "right";
 
@@ -8,37 +14,34 @@ export interface TriangleProps {
   right: string;
   missing: Slot;
   lockedSlots?: Slot[];
+  operation?: TriangleOperation;
+  status?: TriangleStatus;
 }
 
-export function Triangle({ product, left, right, missing, lockedSlots = [] }: TriangleProps) {
-  const slotStyle = (slot: Slot) => ({
-    border: slot === missing ? "2px dashed #333" : "2px solid #333",
-    background: slot === missing ? "#fff7e6" : "#f6f6f6",
-    padding: "10px 14px",
-    minWidth: 70,
-    textAlign: "center" as const,
-    borderRadius: 8,
-    position: "relative" as const,
-  });
+const slotMap: Record<Slot, TriangleSlot> = {
+  product: "product",
+  left: "factorA",
+  right: "factorB",
+};
 
-  const lockStyle = {
-    position: "absolute" as const,
-    top: -8,
-    right: -8,
-    background: "#333",
-    color: "#fff",
-    fontSize: 10,
-    padding: "2px 6px",
-    borderRadius: 10,
-  };
-
+export function Triangle({
+  product,
+  left,
+  right,
+  missing,
+  lockedSlots = [],
+  operation = "mul",
+  status = "idle",
+}: TriangleProps) {
   return (
-    <div style={{ display: "grid", justifyItems: "center", gap: 10 }}>
-      <div style={slotStyle("product")}>{product}{lockedSlots.includes("product") ? <span style={lockStyle}>LOCK</span> : null}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-        <div style={slotStyle("left")}>{left}{lockedSlots.includes("left") ? <span style={lockStyle}>LOCK</span> : null}</div>
-        <div style={slotStyle("right")}>{right}{lockedSlots.includes("right") ? <span style={lockStyle}>LOCK</span> : null}</div>
-      </div>
-    </div>
+    <TriangleDisplay
+      product={product}
+      factorA={left}
+      factorB={right}
+      missingSlot={slotMap[missing]}
+      lockedSlots={lockedSlots.map(slot => slotMap[slot])}
+      operation={operation}
+      status={status}
+    />
   );
 }

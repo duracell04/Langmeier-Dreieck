@@ -128,7 +128,8 @@ export function Practice() {
   const triangleLeft = formatSlot(task.left, task.missing === "left", input, showCorrect, correct);
   const triangleRight = formatSlot(task.right, task.missing === "right", input, showCorrect, correct);
 
-  const lockedSlots = task.operation === "div" ? ["product"] : [];
+  const lockedSlots: Array<"product" | "left" | "right"> = task.operation === "div" ? ["product"] : [];
+  const triangleStatus = tone === "success" ? "success" : tone === "warning" ? "hint" : "idle";
 
   return (
     <main style={{ display: "grid", gap: 18, padding: 24, maxWidth: 720, margin: "0 auto" }}>
@@ -148,10 +149,12 @@ export function Practice() {
           right={triangleRight}
           missing={task.missing}
           lockedSlots={lockedSlots}
+          operation={task.operation}
+          status={triangleStatus}
         />
 
         {feedback ? <FeedbackFlash message={feedback} tone={tone} /> : null}
-        <StructureLensGrid visible={showStructure || flashActive} />
+        <StructureLensGrid visible={showStructure || flashActive} rows={task.left} cols={task.right} />
       </section>
 
       <section style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 220px" }}>
