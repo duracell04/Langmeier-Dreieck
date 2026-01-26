@@ -8,6 +8,7 @@ export type StudentEvent =
   | TaskShownEvent
   | AttemptSubmittedEvent
   | HintUsedEvent
+  | TaskEndEvent
   | SessionEndEvent;
 
 export interface BaseEvent {
@@ -45,6 +46,23 @@ export interface HintUsedEvent extends BaseEvent {
   type: "hint_used";
   hintType: "family_glance" | "structure_lens";
   taskKey?: string;
+}
+
+export type TaskEndResult = "correct" | "reveal";
+export type TaskEndMissingSlot = "product" | "factorLeft" | "factorRight";
+export type LockedRole = "none" | "divisorLeft" | "divisorRight";
+
+export interface TaskEndEvent extends BaseEvent {
+  type: "task_end";
+  taskId: string;
+  familyProduct: number;       // product family (e.g. 24)
+  op: "mul" | "div";
+  missing: TaskEndMissingSlot;
+  lockedRole: LockedRole;
+  attemptsBeforeEnd: 0 | 1 | 2; // 0 = first try
+  usedStructureLens: boolean;
+  msToEnd: number;
+  result: TaskEndResult;
 }
 
 export interface SessionEndEvent extends BaseEvent {

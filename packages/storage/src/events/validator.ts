@@ -55,6 +55,18 @@ export const StudentEventSchema = z.discriminatedUnion("type", [
     taskKey: z.string().optional(),
   }),
   BaseEventSchema.extend({
+    type: z.literal("task_end"),
+    taskId: z.string(),
+    familyProduct: z.number().int().nonnegative(),
+    op: z.union([z.literal("mul"), z.literal("div")]),
+    missing: z.union([z.literal("product"), z.literal("factorLeft"), z.literal("factorRight")]),
+    lockedRole: z.union([z.literal("none"), z.literal("divisorLeft"), z.literal("divisorRight")]),
+    attemptsBeforeEnd: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+    usedStructureLens: z.boolean(),
+    msToEnd: z.number().int().nonnegative(),
+    result: z.union([z.literal("correct"), z.literal("reveal")]),
+  }),
+  BaseEventSchema.extend({
     type: z.literal("session_end"),
     durationMs: z.number().int().nonnegative(),
     items: z.number().int().nonnegative(),

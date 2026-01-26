@@ -4,5 +4,6 @@ export * from "./engine/mastery";
 export * from "./engine/errorTyping";
 export * from "./engine/families";
 export * from "./engine/rng";
+export * from "./engine/gamification";
 export * from "./session/sessionManager";
 export * from "./session/sessionRecovery";

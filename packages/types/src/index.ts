@@ -3,5 +3,6 @@ export * from "./domain/ProductFamily";
 export * from "./domain/Task";
 export * from "./domain/Attempt";
 export * from "./domain/Mastery";
+export * from "./domain/Gamification";
 export * from "./events/StudentEvents";
 export * from "./api/ClassApi";
