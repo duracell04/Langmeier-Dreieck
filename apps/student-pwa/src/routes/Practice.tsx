@@ -13,6 +13,7 @@ import { buildCoreFamilies, createSeedFromTime, createSeededRng, pickNextTask } 
 import type { FamilyMastery, Task as EngineTask } from "@triangle/types";
 
 const SESSION_TOTAL = 25;
+const ANSWER_REVEAL_MS = 1600;
 
 function getMissingSlot(missing: EngineTask["missing"]): TriangleSlot {
   if (missing === "product") return "product";
@@ -115,6 +116,7 @@ export function Practice() {
   const handleCorrect = () => {
     setFeedback("correct");
     setShowCorrect(true);
+    setShowStructure(false);
     schedule(goNext, 350);
   };
 
@@ -129,16 +131,16 @@ export function Practice() {
     setFeedback("structure");
     setShowStructure(true);
     setInput("");
-    schedule(() => {
-      setShowStructure(false);
-      setShowCorrect(true);
-      setFeedback("show_answer");
-    }, 1200);
-    schedule(goNext, 2200);
+  };
+
+  const showAnswerAndAdvance = () => {
+    setShowCorrect(true);
+    setFeedback("show_answer");
+    schedule(goNext, ANSWER_REVEAL_MS);
   };
 
   const submit = () => {
-    if (!input.length || feedback === "correct" || feedback === "structure" || feedback === "show_answer") return;
+    if (!input.length || feedback === "correct" || feedback === "show_answer") return;
     const answer = Number(input);
     if (Number.isNaN(answer)) return;
 
@@ -152,11 +154,16 @@ export function Practice() {
       return;
     }
 
-    handleSecondWrong();
+    if (attempts === 1) {
+      handleSecondWrong();
+      return;
+    }
+
+    showAnswerAndAdvance();
   };
 
   const onKey = (key: KeypadKey) => {
-    if (feedback === "correct" || feedback === "structure" || feedback === "show_answer") return;
+    if (feedback === "correct" || feedback === "show_answer") return;
     if (key === "enter") {
       submit();
       return;
@@ -215,7 +222,7 @@ export function Practice() {
         <div className="mx-auto w-full max-w-md">
           <Keypad
             onKey={onKey}
-            disabled={feedback === "correct" || feedback === "structure" || feedback === "show_answer"}
+            disabled={feedback === "correct" || feedback === "show_answer"}
           />
         </div>
       }
@@ -234,6 +241,12 @@ export function Practice() {
         <FeedbackLadder state={feedback} message={feedbackMessage} detail={feedbackDetail} />
 
         <StructureLensGrid visible={showStructure} rows={leftValue} cols={rightValue} />
+
+        {needsAck ? (
+          <Button variant="secondary" onClick={goNext}>
+            Verstanden
+          </Button>
+        ) : null}
       </div>
     </PracticeFrame>
   );
