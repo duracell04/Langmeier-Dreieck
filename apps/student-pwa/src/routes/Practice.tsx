@@ -176,7 +176,7 @@ export function Practice() {
         : feedback === "show_answer"
           ? `Antwort: ${correct}`
           : feedback === "correct"
-            ? "Weiter"
+            ? "Richtig"
             : undefined;
 
   const feedbackDetail = feedback === "show_answer" ? "Aufgabe kommt wieder" : undefined;

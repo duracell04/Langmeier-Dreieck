@@ -50,6 +50,13 @@ export const TriangleDisplay = React.forwardRef<HTMLDivElement, TriangleDisplayP
           ? "border-status-error"
           : "border-focus";
 
+    const missingRing =
+      status === "success"
+        ? "ring-status-success"
+        : status === "error"
+          ? "ring-status-error"
+          : "ring-focus";
+
     const slotBase =
       "min-w-touch min-h-touch px-3 py-2 rounded-swiss border bg-surface " +
       "tabular-nums text-center flex items-center justify-center select-none";
@@ -59,7 +66,8 @@ export const TriangleDisplay = React.forwardRef<HTMLDivElement, TriangleDisplayP
         slotBase,
         "border-grid-border",
         isLocked(slot) && "opacity-70 border-dashed text-muted",
-        isMissing(slot) && cn("border-2", missingBorder, "ring-2 ring-focus ring-offset-2 ring-offset-surface"),
+        isMissing(slot) &&
+          cn("border-2", missingBorder, "ring-2", missingRing, "ring-offset-2 ring-offset-surface"),
         status === "hint" && isMissing(slot) && "ring-2 ring-focus"
       );
 
