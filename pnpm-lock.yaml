@@ -17,6 +17,9 @@ importers:
 
   apps/student-pwa:
     dependencies:
+      '@triangle/core-engine':
+        specifier: workspace:*
+        version: link:../../packages/core-engine
       '@triangle/theme':
         specifier: workspace:*
         version: link:../../packages/theme

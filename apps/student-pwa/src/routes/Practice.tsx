@@ -9,31 +9,21 @@ import {
   type KeypadKey,
   type TriangleSlot,
 } from "@triangle/ui-kit";
-
-type Operation = "mul" | "div";
-
-type Task = {
-  id: string;
-  operation: Operation;
-  product: number;
-  factorA: number;
-  factorB: number;
-  missingSlot: TriangleSlot;
-};
-
-const TASKS: Task[] = [
-  { id: "t1", operation: "mul", product: 24, factorA: 6, factorB: 4, missingSlot: "product" },
-  { id: "t2", operation: "mul", product: 24, factorA: 6, factorB: 4, missingSlot: "factorA" },
-  { id: "t3", operation: "div", product: 24, factorA: 6, factorB: 4, missingSlot: "factorB" },
-  { id: "t4", operation: "div", product: 24, factorA: 6, factorB: 4, missingSlot: "factorA" },
-];
+import { buildCoreFamilies, createSeedFromTime, createSeededRng, pickNextTask } from "@triangle/core-engine";
+import type { FamilyMastery, Task as EngineTask } from "@triangle/types";
 
 const SESSION_TOTAL = 25;
 
-function expectedAnswer(t: Task): number {
-  if (t.missingSlot === "product") return t.factorA * t.factorB;
-  if (t.missingSlot === "factorA") return t.product / t.factorB;
-  return t.product / t.factorA;
+function getMissingSlot(missing: EngineTask["missing"]): TriangleSlot {
+  if (missing === "product") return "product";
+  return missing === "left" ? "factorA" : "factorB";
+}
+
+function expectedAnswer(task: EngineTask): number {
+  const [leftValue, rightValue] = task.pair;
+  const productValue = leftValue * rightValue;
+  if (task.missing === "product") return productValue;
+  return task.missing === "left" ? leftValue : rightValue;
 }
 
 function formatSlot(value: number, isMissing: boolean, input: string, showCorrect: boolean, correct: number) {
@@ -43,7 +33,34 @@ function formatSlot(value: number, isMissing: boolean, input: string, showCorrec
 }
 
 export function Practice() {
+  const families = React.useMemo(() => buildCoreFamilies(), []);
+  const rngSeed = React.useMemo(() => {
+    if (typeof window === "undefined") return 1;
+    const key = "triangle.practice.seed";
+    const stored = window.sessionStorage.getItem(key);
+    const parsed = stored ? Number(stored) : Number.NaN;
+    if (Number.isFinite(parsed)) return parsed;
+    const seed = createSeedFromTime();
+    window.sessionStorage.setItem(key, String(seed));
+    return seed;
+  }, []);
+  const rng = React.useMemo(() => createSeededRng(rngSeed), [rngSeed]);
+  const masteryRef = React.useRef<Record<string, FamilyMastery>>({});
+  const recentRef = React.useRef<string[]>([]);
+
+  const nextTask = React.useCallback(() => {
+    const next = pickNextTask(families, masteryRef.current, {
+      rng,
+      recentFamilyIds: recentRef.current,
+      operation: "mix",
+      missing: "mix",
+    });
+    recentRef.current = [...recentRef.current, next.familyId].slice(-2);
+    return next;
+  }, [families, rng]);
+
   const [taskIndex, setTaskIndex] = React.useState(0);
+  const [task, setTask] = React.useState<EngineTask>(() => nextTask());
   const [input, setInput] = React.useState("");
   const [attempts, setAttempts] = React.useState(0);
   const [feedback, setFeedback] = React.useState<FeedbackState>("idle");
@@ -53,9 +70,11 @@ export function Practice() {
 
   const timers = React.useRef<number[]>([]);
 
-  const task = TASKS[taskIndex % TASKS.length];
   const correct = expectedAnswer(task);
   const progress = (taskIndex % SESSION_TOTAL) + 1;
+  const [leftValue, rightValue] = task.pair;
+  const productValue = leftValue * rightValue;
+  const missingSlot = getMissingSlot(task.missing);
 
   const clearTimers = React.useCallback(() => {
     timers.current.forEach(t => window.clearTimeout(t));
@@ -89,8 +108,9 @@ export function Practice() {
 
   const goNext = React.useCallback(() => {
     setTaskIndex(i => i + 1);
+    setTask(nextTask());
     resetForNext();
-  }, [resetForNext]);
+  }, [nextTask, resetForNext]);
 
   const handleCorrect = () => {
     setFeedback("correct");
@@ -148,15 +168,15 @@ export function Practice() {
     setInput(prev => (prev + key).slice(0, 3));
   };
 
-  const triangleProduct = formatSlot(task.product, task.missingSlot === "product", input, showCorrect, correct);
-  const triangleFactorA = formatSlot(task.factorA, task.missingSlot === "factorA", input, showCorrect, correct);
-  const triangleFactorB = formatSlot(task.factorB, task.missingSlot === "factorB", input, showCorrect, correct);
+  const triangleProduct = formatSlot(productValue, missingSlot === "product", input, showCorrect, correct);
+  const triangleFactorA = formatSlot(leftValue, missingSlot === "factorA", input, showCorrect, correct);
+  const triangleFactorB = formatSlot(rightValue, missingSlot === "factorB", input, showCorrect, correct);
 
   const lockedSlots: TriangleSlot[] =
     task.operation === "div"
-      ? task.missingSlot === "factorA"
+      ? missingSlot === "factorA"
         ? ["factorB"]
-        : task.missingSlot === "factorB"
+        : missingSlot === "factorB"
           ? ["factorA"]
           : []
       : [];
@@ -205,7 +225,7 @@ export function Practice() {
           product={triangleProduct}
           factorA={triangleFactorA}
           factorB={triangleFactorB}
-          missingSlot={task.missingSlot}
+          missingSlot={missingSlot}
           lockedSlots={lockedSlots}
           operation={task.operation}
           status={triangleStatus}
@@ -213,7 +233,7 @@ export function Practice() {
 
         <FeedbackLadder state={feedback} message={feedbackMessage} detail={feedbackDetail} />
 
-        <StructureLensGrid visible={showStructure} rows={task.factorA} cols={task.factorB} />
+        <StructureLensGrid visible={showStructure} rows={leftValue} cols={rightValue} />
       </div>
     </PracticeFrame>
   );

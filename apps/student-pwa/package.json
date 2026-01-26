@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@triangle/core-engine": "workspace:*",
     "@triangle/theme": "workspace:*",
     "@triangle/ui-kit": "workspace:*",
     "react": "^18.2.0",
