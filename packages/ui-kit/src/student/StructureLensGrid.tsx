@@ -61,12 +61,15 @@ export function StructureLensGrid({
         <rect x="0" y="0" width="100" height="100" className="fill-grid-bg" />
 
         {mode === "rect" ? (
-          <rect x="0" y="0" width={fillWidth} height={fillHeight} className="fill-grid-fill" />
+          <>
+            <rect x="0" y="0" width={fillWidth} height={fillHeight} className="fill-grid-fill" opacity="0.9" />
+            <rect x="0" y="0" width={fillWidth} height={fillHeight} className="fill-focus" opacity="0.08" />
+          </>
         ) : (
           Array.from({ length: Math.min(100, Math.max(0, count ?? 0)) }).map((_, i) => {
             const x = (i % 10) * cell;
             const y = Math.floor(i / 10) * cell;
-            return <rect key={i} x={x} y={y} width={cell} height={cell} className="fill-grid-fill" />;
+            return <rect key={i} x={x} y={y} width={cell} height={cell} className="fill-grid-fill" opacity="0.9" />;
           })
         )}
 
@@ -77,8 +80,9 @@ export function StructureLensGrid({
             width={fillWidth}
             height={fillHeight}
             fill="none"
-            className="stroke-focus"
-            strokeWidth="1.5"
+            className="stroke-grid-border"
+            strokeWidth="1"
+            opacity="0.6"
           />
         )}
 
@@ -86,13 +90,13 @@ export function StructureLensGrid({
           const p = (i + 1) * cell;
           return (
             <React.Fragment key={p}>
-              <line x1={p} y1={0} x2={p} y2={100} className="stroke-grid-border" strokeWidth="1" />
-              <line x1={0} y1={p} x2={100} y2={p} className="stroke-grid-border" strokeWidth="1" />
+              <line x1={p} y1={0} x2={p} y2={100} className="stroke-grid-border" strokeWidth="1" opacity="0.6" />
+              <line x1={0} y1={p} x2={100} y2={p} className="stroke-grid-border" strokeWidth="1" opacity="0.6" />
             </React.Fragment>
           );
         })}
 
-        <rect x="0" y="0" width="100" height="100" fill="none" className="stroke-grid-border" strokeWidth="1" />
+        <rect x="0" y="0" width="100" height="100" fill="none" className="stroke-grid-border" strokeWidth="1.5" />
 
         {highlight === "rows" && r > 0 && (
           <line x1={0} y1={0} x2={0} y2={fillHeight} className="stroke-focus" strokeWidth="2.5" />

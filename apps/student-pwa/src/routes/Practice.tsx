@@ -13,7 +13,6 @@ import { buildCoreFamilies, createSeedFromTime, createSeededRng, pickNextTask } 
 import type { FamilyMastery, Task as EngineTask } from "@triangle/types";
 
 const SESSION_TOTAL = 25;
-const ANSWER_REVEAL_MS = 1600;
 
 function getMissingSlot(missing: EngineTask["missing"]): TriangleSlot {
   if (missing === "product") return "product";
@@ -134,15 +133,22 @@ export function Practice() {
   };
 
   const showAnswerAndAdvance = () => {
-    setShowCorrect(true);
     setFeedback("show_answer");
-    schedule(goNext, ANSWER_REVEAL_MS);
   };
 
   const submit = () => {
-    if (!input.length || feedback === "correct" || feedback === "show_answer") return;
+    if (!input.length || feedback === "correct") return;
     const answer = Number(input);
     if (Number.isNaN(answer)) return;
+
+    if (feedback === "show_answer") {
+      if (answer === correct) {
+        goNext();
+      } else {
+        setInput("");
+      }
+      return;
+    }
 
     if (answer === correct) {
       handleCorrect();
@@ -163,7 +169,7 @@ export function Practice() {
   };
 
   const onKey = (key: KeypadKey) => {
-    if (feedback === "correct" || feedback === "show_answer") return;
+    if (feedback === "correct") return;
     if (key === "enter") {
       submit();
       return;
@@ -206,7 +212,7 @@ export function Practice() {
             ? "Richtig"
             : undefined;
 
-  const feedbackDetail = feedback === "show_answer" ? "Aufgabe kommt wieder" : undefined;
+  const feedbackDetail = feedback === "show_answer" ? "Antwort eingeben" : undefined;
 
   return (
     <PracticeFrame
@@ -222,7 +228,7 @@ export function Practice() {
         <div className="mx-auto w-full max-w-md">
           <Keypad
             onKey={onKey}
-            disabled={feedback === "correct" || feedback === "show_answer"}
+            disabled={feedback === "correct"}
           />
         </div>
       }
@@ -241,12 +247,6 @@ export function Practice() {
         <FeedbackLadder state={feedback} message={feedbackMessage} detail={feedbackDetail} />
 
         <StructureLensGrid visible={showStructure} rows={leftValue} cols={rightValue} />
-
-        {needsAck ? (
-          <Button variant="secondary" onClick={goNext}>
-            Verstanden
-          </Button>
-        ) : null}
       </div>
     </PracticeFrame>
   );
