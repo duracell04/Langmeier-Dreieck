@@ -8,5 +8,9 @@
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
     "lint": "pnpm -r --if-present lint"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "tailwindcss": "^4"
   }
 }
