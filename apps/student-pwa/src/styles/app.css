@@ -5,8 +5,8 @@
 @layer base {
   html,
   body {
-    background: var(--c-bg);
-    color: var(--c-text-primary);
+    background: var(--c-app-bg);
+    color: var(--c-product-text);
     font-family: var(--font-main);
   }
 }

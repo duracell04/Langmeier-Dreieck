@@ -12,18 +12,20 @@
   --c-danger: #b24a4a;
 
   /* Swiss semantic palette */
-  --c-app-bg: var(--c-bg);
-  --c-product-text: var(--c-text-primary);
-  --c-factor-text: var(--c-text-secondary);
-  --c-muted-text: var(--c-text-secondary);
+  --c-app-bg: #f7f6f2;
+  --c-product-text: #1f2429;
+  --c-factor-text: #4a525a;
+  --c-muted-text: #4a525a;
   --c-grid-border: #dddddd;
   --c-grid-bg: #ffffff;
   --c-grid-fill: #f3f3f3;
-  --c-focus: var(--c-primary);
-  --c-status-success: var(--c-success);
-  --c-status-error: var(--c-danger);
+  --c-focus: #2f6f7a;
+  --c-status-success: #3f7a5a;
+  --c-status-error: #b24a4a;
+  --c-status-warning: #b6782d;
+  --c-status-info: #3f6fa1;
 
-  --font-main: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-main: "Inter", "Segoe UI", system-ui, sans-serif;
   --font-sans: var(--font-main);
 
   /* Rhythm / geometry */

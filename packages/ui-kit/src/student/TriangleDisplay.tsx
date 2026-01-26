@@ -38,7 +38,7 @@ export const TriangleDisplay = React.forwardRef<HTMLDivElement, TriangleDisplayP
     },
     ref
   ) => {
-    const opSymbol = operation === "mul" ? "x" : "/";
+    const opSymbol = operation === "mul" ? "×" : "÷";
 
     const isLocked = (slot: TriangleSlot) => lockedSlots.includes(slot);
     const isMissing = (slot: TriangleSlot) => missingSlot === slot;

@@ -1,8 +1,14 @@
-﻿import React from "react";
-import { Triangle } from "../ui/Triangle";
-import { Keypad } from "../ui/Keypad";
-import { StructureLensGrid } from "../ui/StructureLensGrid";
-import { FeedbackFlash } from "../ui/FeedbackFlash";
+import React from "react";
+import {
+  FeedbackLadder,
+  Keypad,
+  PracticeFrame,
+  StructureLensGrid,
+  TriangleDisplay,
+  type FeedbackState,
+  type KeypadKey,
+  type TriangleSlot,
+} from "@triangle/ui-kit";
 
 type Operation = "mul" | "div";
 
@@ -10,26 +16,28 @@ type Task = {
   id: string;
   operation: Operation;
   product: number;
-  left: number;
-  right: number;
-  missing: "product" | "left" | "right";
+  factorA: number;
+  factorB: number;
+  missingSlot: TriangleSlot;
 };
 
 const TASKS: Task[] = [
-  { id: "t1", operation: "mul", product: 24, left: 6, right: 4, missing: "product" },
-  { id: "t2", operation: "mul", product: 24, left: 6, right: 4, missing: "left" },
-  { id: "t3", operation: "div", product: 24, left: 6, right: 4, missing: "right" },
-  { id: "t4", operation: "div", product: 24, left: 6, right: 4, missing: "left" },
+  { id: "t1", operation: "mul", product: 24, factorA: 6, factorB: 4, missingSlot: "product" },
+  { id: "t2", operation: "mul", product: 24, factorA: 6, factorB: 4, missingSlot: "factorA" },
+  { id: "t3", operation: "div", product: 24, factorA: 6, factorB: 4, missingSlot: "factorB" },
+  { id: "t4", operation: "div", product: 24, factorA: 6, factorB: 4, missingSlot: "factorA" },
 ];
 
+const SESSION_TOTAL = 25;
+
 function expectedAnswer(t: Task): number {
-  if (t.missing === "product") return t.left * t.right;
-  if (t.missing === "left") return t.product / t.right;
-  return t.product / t.left;
+  if (t.missingSlot === "product") return t.factorA * t.factorB;
+  if (t.missingSlot === "factorA") return t.product / t.factorB;
+  return t.product / t.factorA;
 }
 
-function formatSlot(value: number | null, isMissing: boolean, input: string, showCorrect: boolean, correct: number) {
-  if (!isMissing) return String(value ?? "");
+function formatSlot(value: number, isMissing: boolean, input: string, showCorrect: boolean, correct: number) {
+  if (!isMissing) return String(value);
   if (showCorrect) return String(correct);
   return input.length ? input : "?";
 }
@@ -38,137 +46,175 @@ export function Practice() {
   const [taskIndex, setTaskIndex] = React.useState(0);
   const [input, setInput] = React.useState("");
   const [attempts, setAttempts] = React.useState(0);
-  const [feedback, setFeedback] = React.useState<string | null>(null);
-  const [tone, setTone] = React.useState<"neutral" | "warning" | "success">("neutral");
+  const [feedback, setFeedback] = React.useState<FeedbackState>("idle");
   const [showCorrect, setShowCorrect] = React.useState(false);
   const [showStructure, setShowStructure] = React.useState(false);
-  const [flashActive, setFlashActive] = React.useState(false);
+  const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
+
+  const timers = React.useRef<number[]>([]);
 
   const task = TASKS[taskIndex % TASKS.length];
   const correct = expectedAnswer(task);
+  const progress = (taskIndex % SESSION_TOTAL) + 1;
+
+  const clearTimers = React.useCallback(() => {
+    timers.current.forEach(t => window.clearTimeout(t));
+    timers.current = [];
+  }, []);
 
   React.useEffect(() => {
-    let t: number | undefined;
-    if (flashActive) {
-      t = window.setTimeout(() => {
-        setFlashActive(false);
-        setShowCorrect(true);
-        setFeedback("Correct answer shown");
-        setTone("neutral");
-      }, 700);
-    }
+    const handleStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", handleStatus);
+    window.addEventListener("offline", handleStatus);
     return () => {
-      if (t) window.clearTimeout(t);
+      window.removeEventListener("online", handleStatus);
+      window.removeEventListener("offline", handleStatus);
+      clearTimers();
     };
-  }, [flashActive]);
+  }, [clearTimers]);
 
-  const resetForNext = () => {
-    setInput("");
-    setAttempts(0);
-    setFeedback(null);
-    setTone("neutral");
-    setShowCorrect(false);
-    setShowStructure(false);
-    setFlashActive(false);
+  const schedule = (fn: () => void, ms: number) => {
+    const id = window.setTimeout(fn, ms);
+    timers.current.push(id);
   };
 
-  const goNext = () => {
+  const resetForNext = React.useCallback(() => {
+    clearTimers();
+    setInput("");
+    setAttempts(0);
+    setFeedback("idle");
+    setShowCorrect(false);
+    setShowStructure(false);
+  }, [clearTimers]);
+
+  const goNext = React.useCallback(() => {
     setTaskIndex(i => i + 1);
     resetForNext();
+  }, [resetForNext]);
+
+  const handleCorrect = () => {
+    setFeedback("correct");
+    setShowCorrect(true);
+    schedule(goNext, 350);
+  };
+
+  const handleFirstWrong = () => {
+    setAttempts(1);
+    setFeedback("try_again");
+    setInput("");
+  };
+
+  const handleSecondWrong = () => {
+    setAttempts(2);
+    setFeedback("structure");
+    setShowStructure(true);
+    setInput("");
+    schedule(() => {
+      setShowStructure(false);
+      setShowCorrect(true);
+      setFeedback("show_answer");
+    }, 1200);
+    schedule(goNext, 2200);
   };
 
   const submit = () => {
-    if (!input.length || showCorrect) return;
+    if (!input.length || feedback === "correct" || feedback === "structure" || feedback === "show_answer") return;
     const answer = Number(input);
     if (Number.isNaN(answer)) return;
 
     if (answer === correct) {
-      setFeedback("Correct");
-      setTone("success");
-      setShowCorrect(true);
+      handleCorrect();
       return;
     }
 
     if (attempts === 0) {
-      setAttempts(1);
-      setFeedback("Try again");
-      setTone("warning");
+      handleFirstWrong();
       return;
     }
 
-    if (attempts === 1) {
-      setAttempts(2);
-      setFeedback("Structure flash");
-      setTone("warning");
-      setShowStructure(true);
-      setFlashActive(true);
-      return;
-    }
+    handleSecondWrong();
   };
 
-  const onKey = (key: "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "clear" | "back" | "enter") => {
+  const onKey = (key: KeypadKey) => {
+    if (feedback === "correct" || feedback === "structure" || feedback === "show_answer") return;
     if (key === "enter") {
       submit();
       return;
     }
-    if (key === "clear") {
-      setInput("");
-      return;
-    }
-    if (key === "back") {
+    if (key === "backspace") {
       setInput(prev => prev.slice(0, -1));
       return;
     }
     setInput(prev => (prev + key).slice(0, 3));
   };
 
-  const opSymbol = task.operation === "mul" ? "x" : "/";
+  const triangleProduct = formatSlot(task.product, task.missingSlot === "product", input, showCorrect, correct);
+  const triangleFactorA = formatSlot(task.factorA, task.missingSlot === "factorA", input, showCorrect, correct);
+  const triangleFactorB = formatSlot(task.factorB, task.missingSlot === "factorB", input, showCorrect, correct);
 
-  const triangleProduct = formatSlot(task.product, task.missing === "product", input, showCorrect, correct);
-  const triangleLeft = formatSlot(task.left, task.missing === "left", input, showCorrect, correct);
-  const triangleRight = formatSlot(task.right, task.missing === "right", input, showCorrect, correct);
+  const lockedSlots: TriangleSlot[] =
+    task.operation === "div"
+      ? task.missingSlot === "factorA"
+        ? ["factorB"]
+        : task.missingSlot === "factorB"
+          ? ["factorA"]
+          : []
+      : [];
 
-  const lockedSlots: Array<"product" | "left" | "right"> = task.operation === "div" ? ["product"] : [];
-  const triangleStatus = tone === "success" ? "success" : tone === "warning" ? "hint" : "idle";
+  const triangleStatus =
+    feedback === "correct"
+      ? "success"
+      : feedback === "try_again" || feedback === "structure" || feedback === "show_answer"
+        ? "hint"
+        : "idle";
+
+  const feedbackMessage =
+    feedback === "try_again"
+      ? "Nochmal versuchen"
+      : feedback === "structure"
+        ? "Schauen wir auf die Struktur"
+        : feedback === "show_answer"
+          ? `Antwort: ${correct}`
+          : feedback === "correct"
+            ? "Weiter"
+            : undefined;
+
+  const feedbackDetail = feedback === "show_answer" ? "Aufgabe kommt wieder" : undefined;
 
   return (
-    <main style={{ display: "grid", gap: 18, padding: 24, maxWidth: 720, margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Practice</h1>
-        <button type="button" onClick={() => (window.location.hash = "#/")}>Exit</button>
-      </header>
-
-      <section style={{ display: "grid", gap: 12 }}>
-        <div style={{ fontSize: 18 }}>
-          Task {taskIndex + 1} &middot; {task.product} {opSymbol} {task.left} = {task.right}
+    <PracticeFrame
+      header={
+        <>
+          <div className="text-sm text-muted">
+            {progress}/{SESSION_TOTAL}
+          </div>
+          <div className="text-sm text-muted">{isOnline ? "" : "Offline"}</div>
+        </>
+      }
+      footer={
+        <div className="mx-auto w-full max-w-md">
+          <Keypad
+            onKey={onKey}
+            disabled={feedback === "correct" || feedback === "structure" || feedback === "show_answer"}
+          />
         </div>
-
-        <Triangle
+      }
+    >
+      <div className="grid w-full place-items-center gap-6">
+        <TriangleDisplay
           product={triangleProduct}
-          left={triangleLeft}
-          right={triangleRight}
-          missing={task.missing}
+          factorA={triangleFactorA}
+          factorB={triangleFactorB}
+          missingSlot={task.missingSlot}
           lockedSlots={lockedSlots}
           operation={task.operation}
           status={triangleStatus}
         />
 
-        {feedback ? <FeedbackFlash message={feedback} tone={tone} /> : null}
-        <StructureLensGrid visible={showStructure || flashActive} rows={task.left} cols={task.right} />
-      </section>
+        <FeedbackLadder state={feedback} message={feedbackMessage} detail={feedbackDetail} />
 
-      <section style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 220px" }}>
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ fontSize: 24, minHeight: 32 }}>Answer: {input || ""}</div>
-          <button type="button" onClick={submit} disabled={showCorrect}>
-            Check
-          </button>
-          <button type="button" onClick={goNext} disabled={!showCorrect}>
-            Next
-          </button>
-        </div>
-        <Keypad onKey={onKey} />
-      </section>
-    </main>
+        <StructureLensGrid visible={showStructure} rows={task.factorA} cols={task.factorB} />
+      </div>
+    </PracticeFrame>
   );
 }
