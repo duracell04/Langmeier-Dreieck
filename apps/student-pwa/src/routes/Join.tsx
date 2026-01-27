@@ -74,9 +74,13 @@ export function Join() {
   }, []);
 
   const onJoin = React.useCallback(async (overrideCode?: string) => {
-    const rawCode = (overrideCode ?? code).trim();
-    if (!rawCode) return;
-    const normalized = rawCode.toUpperCase();
+    const sourceCode = typeof overrideCode === "string" ? overrideCode : code;
+    const normalized = sourceCode.trim().toUpperCase();
+    if (!normalized) {
+      setErrorMessage("Bitte einen Code eingeben.");
+      setStatus("error");
+      return;
+    }
     if (overrideCode) {
       setCode(normalized);
     }
@@ -89,12 +93,16 @@ export function Join() {
       const offline = typeof navigator !== "undefined" && !navigator.onLine;
       setErrorMessage(
         offline
-          ? "Offline. Bitte spaeter verbinden."
-          : "Beitritt nicht moeglich. Bitte Code pruefen."
+          ? "Offline. Bitte spaeter erneut versuchen."
+          : "Beitritt nicht moeglich. Code pruefen oder Demo nutzen."
       );
       setStatus("error");
     }
   }, [code, identity]);
+
+  const onJoinClick = React.useCallback(() => {
+    onJoin();
+  }, [onJoin]);
 
   React.useEffect(() => {
     if (!autoJoin) return;
@@ -210,7 +218,7 @@ export function Join() {
           {!isOnline ? <div className="text-sm text-warning">Offline. Verbindung fehlt.</div> : null}
           {errorMessage ? <div className="text-sm text-warning">{errorMessage}</div> : null}
 
-          <Button onClick={onJoin} disabled={!code.trim() || status === "joining"} className="w-full">
+          <Button onClick={onJoinClick} disabled={!code.trim() || status === "joining"} className="w-full">
             {status === "joining" ? "Verbinden..." : "Beitreten"}
           </Button>
         </Card>
