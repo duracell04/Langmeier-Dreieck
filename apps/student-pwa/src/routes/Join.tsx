@@ -40,7 +40,6 @@ export function Join() {
   const [stored, setStored] = React.useState<StoredIdentity | null>(null);
   const [autoJoin, setAutoJoin] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
-  const [showDemoInfo, setShowDemoInfo] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -112,17 +111,6 @@ export function Join() {
     setAutoJoin(false);
   }, [autoJoin, code, onJoin, status]);
 
-  React.useEffect(() => {
-    if (!showDemoInfo) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setShowDemoInfo(false);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [showDemoInfo]);
-
   const onContinue = React.useCallback(async () => {
     if (!stored) return;
     if (!navigator.onLine) {
@@ -142,16 +130,6 @@ export function Join() {
     }
   }, [stored]);
 
-  const onDemoStart = React.useCallback(() => {
-    setShowDemoInfo(false);
-    onJoin(PRIMARY_DEMO_JOIN_CODE);
-  }, [onJoin]);
-
-  const onDemoFill = React.useCallback(() => {
-    setCode(PRIMARY_DEMO_JOIN_CODE);
-    setShowDemoInfo(false);
-  }, []);
-
   return (
     <div className="min-h-screen bg-bg text-foreground font-sans flex flex-col">
       <Navbar
@@ -168,18 +146,7 @@ export function Join() {
             <div className="grid gap-8">
               <header className="grid gap-3 text-center">
                 <p className="eyebrow">Dreieck-1x1</p>
-                <div className="flex items-center justify-center gap-3">
-                  <h1 className="text-3xl font-semibold text-foreground">Beitreten</h1>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 rounded-full p-0"
-                    onClick={() => setShowDemoInfo(true)}
-                    aria-label="Demo Hinweise anzeigen"
-                  >
-                    i
-                  </Button>
-                </div>
+                <h1 className="text-3xl font-semibold text-foreground">Beitreten</h1>
                 <p className="text-sm text-muted-foreground">Kein Login noetig.</p>
               </header>
 
@@ -246,54 +213,6 @@ export function Join() {
       </main>
 
       <Footer brand="Langmeier Dreieck-1x1" />
-
-      {showDemoInfo ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 px-6"
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setShowDemoInfo(false)}
-        >
-          <div className="w-full max-w-md" onClick={event => event.stopPropagation()}>
-            <Card raised className="grid gap-4 p-6">
-              <div className="flex items-start justify-between gap-3">
-                <div className="grid gap-1">
-                  <h2 className="text-lg font-semibold text-foreground">Demo starten</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Demo laeuft lokal mit fest verdrahteter Standard-Konfiguration.
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowDemoInfo(false)}
-                  aria-label="Demo Hinweise schliessen"
-                >
-                  Schliessen
-                </Button>
-              </div>
-
-              <div className="grid gap-2 rounded-lg border border-border/50 bg-background px-4 py-3">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Demo-Code</div>
-                <div className="text-xl font-semibold tracking-widest text-foreground">{PRIMARY_DEMO_JOIN_CODE}</div>
-                <div className="text-xs text-muted-foreground">Direktlink: #/demo</div>
-              </div>
-
-              <div className="grid gap-2 text-sm text-muted-foreground">
-                <div>Keine echte Klasse noetig.</div>
-                <div>Events bleiben lokal und werden nicht synchronisiert.</div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" onClick={onDemoFill}>
-                  Code einsetzen
-                </Button>
-                <Button onClick={onDemoStart}>Demo starten</Button>
-              </div>
-            </Card>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

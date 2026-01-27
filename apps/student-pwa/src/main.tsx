@@ -24,7 +24,7 @@ function renderRoute() {
       ? <Results />
     : hash.startsWith("#/practice")
       ? <Practice />
-      : hash.startsWith("#/join")
+      : hash.startsWith("#/join") || hash.startsWith("#/demo")
         ? <Join />
         : <Landing />;
   root.render(view);
