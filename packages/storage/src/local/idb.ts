@@ -12,7 +12,9 @@ export type MetaKey =
   | "studentNumber"
   | "packId"
   | "lastAckTs"
-  | "activeSession";
+  | "activeSession"
+  | "joinCode"
+  | "identityMarker";
 
 interface MetaRecord {
   key: MetaKey;
@@ -143,6 +145,22 @@ export async function getSessionId(): Promise<string | null> {
 
 export async function setSessionId(value: string | null): Promise<void> {
   return setMeta("sessionId", value);
+}
+
+export async function getJoinCode(): Promise<string | null> {
+  return getMeta("joinCode");
+}
+
+export async function setJoinCode(value: string | null): Promise<void> {
+  return setMeta("joinCode", value);
+}
+
+export async function getIdentityMarker(): Promise<string | null> {
+  return getMeta("identityMarker");
+}
+
+export async function setIdentityMarker(value: string | null): Promise<void> {
+  return setMeta("identityMarker", value);
 }
 
 export async function clearAllMeta(): Promise<void> {

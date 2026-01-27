@@ -2,10 +2,14 @@ import { supabase } from "./supabaseClient";
 import {
   getClassId,
   getDeviceId,
+  getIdentityMarker,
+  getJoinCode,
   getStudentNumber,
   getStudentRef,
   setClassId,
   setDeviceId,
+  setIdentityMarker,
+  setJoinCode,
   setStudentNumber,
   setStudentRef,
 } from "@triangle/storage";
@@ -14,17 +18,28 @@ export interface JoinClassResult {
   classId: string;
   studentRef: string;
   studentNumber: number;
+  joinCode: string;
 }
 
-export async function loadStoredIdentity(): Promise<JoinClassResult | null> {
-  const [classId, studentRef, studentNumber] = await Promise.all([
+export interface StoredIdentity {
+  classId: string;
+  studentRef: string;
+  studentNumber: number;
+  joinCode: string;
+  identityMarker: string | null;
+}
+
+export async function loadStoredIdentity(): Promise<StoredIdentity | null> {
+  const [classId, studentRef, studentNumber, joinCode, identityMarker] = await Promise.all([
     getClassId(),
     getStudentRef(),
     getStudentNumber(),
+    getJoinCode(),
+    getIdentityMarker(),
   ]);
 
-  if (!classId || !studentRef || studentNumber === null) return null;
-  return { classId, studentRef, studentNumber };
+  if (!classId || !studentRef || studentNumber === null || !joinCode) return null;
+  return { classId, studentRef, studentNumber, joinCode, identityMarker };
 }
 
 async function ensureDeviceId(): Promise<string> {
@@ -35,30 +50,49 @@ async function ensureDeviceId(): Promise<string> {
   return created;
 }
 
-export async function joinClass(joinCode: string, identityToken?: string | null): Promise<JoinClassResult> {
-  const deviceId = await ensureDeviceId();
-  const trimmed = joinCode.trim();
+function normalizeJoinCode(value: string): string {
+  return value.trim().toUpperCase();
+}
 
-  if (import.meta.env.DEV && (trimmed.toUpperCase() === "DEMO" || trimmed.toUpperCase() === "DEMO12")) {
+async function persistIdentity(input: {
+  classId: string;
+  studentRef: string;
+  studentNumber: number;
+  joinCode: string;
+  identityMarker: string | null;
+}) {
+  await Promise.all([
+    setClassId(input.classId),
+    setStudentRef(input.studentRef),
+    setStudentNumber(input.studentNumber),
+    setJoinCode(input.joinCode),
+    setIdentityMarker(input.identityMarker),
+  ]);
+}
+
+export async function joinClass(joinCode: string, identityMarker?: string | null): Promise<JoinClassResult> {
+  const deviceId = await ensureDeviceId();
+  const normalized = normalizeJoinCode(joinCode);
+
+  if (import.meta.env.DEV && (normalized === "DEMO" || normalized === "DEMO12")) {
     const demoRef = `demo-${crypto.randomUUID()}`;
     const result = {
       classId: "demo-class",
       studentRef: demoRef,
       studentNumber: 1,
     };
-    await Promise.all([
-      setClassId(result.classId),
-      setStudentRef(result.studentRef),
-      setStudentNumber(result.studentNumber),
-    ]);
-    return result;
+    await persistIdentity({
+      ...result,
+      joinCode: normalized,
+      identityMarker: identityMarker ?? null,
+    });
+    return { ...result, joinCode: normalized };
   }
 
   const { data, error } = await supabase.functions.invoke("join_class", {
     body: {
-      joinCode: trimmed,
+      joinCode: normalized,
       deviceId,
-      identityToken: identityToken ?? undefined,
     },
   });
 
@@ -75,11 +109,23 @@ export async function joinClass(joinCode: string, identityToken?: string | null)
     throw new Error("join_failed");
   }
 
-  await Promise.all([
-    setClassId(data.classId),
-    setStudentRef(data.studentRef),
-    setStudentNumber(studentNumber),
-  ]);
+  await persistIdentity({
+    classId: data.classId,
+    studentRef: data.studentRef,
+    studentNumber,
+    joinCode: normalized,
+    identityMarker: identityMarker ?? null,
+  });
 
-  return { classId: data.classId, studentRef: data.studentRef, studentNumber };
+  return { classId: data.classId, studentRef: data.studentRef, studentNumber, joinCode: normalized };
+}
+
+export async function clearStoredIdentity(): Promise<void> {
+  await Promise.all([
+    setClassId(null),
+    setStudentRef(null),
+    setStudentNumber(null),
+    setJoinCode(null),
+    setIdentityMarker(null),
+  ]);
 }
