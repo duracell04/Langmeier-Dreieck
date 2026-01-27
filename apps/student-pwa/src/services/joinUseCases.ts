@@ -33,6 +33,10 @@ export interface StoredIdentity {
   identityMarker: string | null;
 }
 
+export const DEMO_JOIN_CODES = ["DEMO12", "DEMO"] as const;
+export const PRIMARY_DEMO_JOIN_CODE = DEMO_JOIN_CODES[0];
+const DEMO_JOIN_CODE_SET = new Set<string>(DEMO_JOIN_CODES);
+
 const DEFAULT_CLASS_CONFIG: ClassConfig = {
   packId: "core",
   defaultMode: "learn",
@@ -100,7 +104,7 @@ export async function joinClass(joinCode: string, identityMarker?: string | null
   const deviceId = await ensureDeviceId();
   const normalized = normalizeJoinCode(joinCode);
 
-  if (import.meta.env.DEV && (normalized === "DEMO" || normalized === "DEMO12")) {
+  if (DEMO_JOIN_CODE_SET.has(normalized)) {
     const demoRef = `demo-${crypto.randomUUID()}`;
     const classConfig = DEFAULT_CLASS_CONFIG;
     const result = {

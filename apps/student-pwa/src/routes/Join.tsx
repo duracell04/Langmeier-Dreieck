@@ -4,6 +4,7 @@ import {
   clearStoredIdentity,
   joinClass,
   loadStoredIdentity,
+  PRIMARY_DEMO_JOIN_CODE,
   type StoredIdentity,
 } from "../services/joinUseCases";
 
@@ -25,6 +26,9 @@ function readJoinCodeFromUrl(): string | null {
     const params = new URLSearchParams(query);
     return params.get("code");
   }
+  if (url.hash.startsWith("#/demo")) {
+    return PRIMARY_DEMO_JOIN_CODE;
+  }
   return null;
 }
 
@@ -36,6 +40,7 @@ export function Join() {
   const [stored, setStored] = React.useState<StoredIdentity | null>(null);
   const [autoJoin, setAutoJoin] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
+  const [showDemoInfo, setShowDemoInfo] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -68,12 +73,17 @@ export function Join() {
     setAutoJoin(true);
   }, []);
 
-  const onJoin = React.useCallback(async () => {
-    if (!code.trim()) return;
+  const onJoin = React.useCallback(async (overrideCode?: string) => {
+    const rawCode = (overrideCode ?? code).trim();
+    if (!rawCode) return;
+    const normalized = rawCode.toUpperCase();
+    if (overrideCode) {
+      setCode(normalized);
+    }
     setStatus("joining");
     setErrorMessage(null);
     try {
-      await joinClass(code.trim(), identity);
+      await joinClass(normalized, identity);
       window.location.hash = "#/practice";
     } catch {
       const offline = typeof navigator !== "undefined" && !navigator.onLine;
@@ -94,6 +104,17 @@ export function Join() {
     setAutoJoin(false);
   }, [autoJoin, code, onJoin, status]);
 
+  React.useEffect(() => {
+    if (!showDemoInfo) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowDemoInfo(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showDemoInfo]);
+
   const onContinue = React.useCallback(async () => {
     if (!stored) return;
     if (!navigator.onLine) {
@@ -113,12 +134,32 @@ export function Join() {
     }
   }, [stored]);
 
+  const onDemoStart = React.useCallback(() => {
+    setShowDemoInfo(false);
+    onJoin(PRIMARY_DEMO_JOIN_CODE);
+  }, [onJoin]);
+
+  const onDemoFill = React.useCallback(() => {
+    setCode(PRIMARY_DEMO_JOIN_CODE);
+    setShowDemoInfo(false);
+  }, []);
+
   return (
     <main className="min-h-screen bg-bg text-ink font-sans">
       <div className="mx-auto grid w-full max-w-md gap-6 px-6 py-10">
         <header className="grid gap-2 text-center">
           <p className="text-micro uppercase tracking-wide text-muted">Dreieck-1x1</p>
-          <h1 className="text-3xl font-semibold text-ink">Beitreten</h1>
+          <div className="flex items-center justify-center gap-3">
+            <h1 className="text-3xl font-semibold text-ink">Beitreten</h1>
+            <button
+              type="button"
+              onClick={() => setShowDemoInfo(true)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-grid-border bg-surface text-sm font-semibold text-ink"
+              aria-label="Demo Hinweise anzeigen"
+            >
+              i
+            </button>
+          </div>
           <p className="text-sm text-muted">Kein Login noetig.</p>
         </header>
 
@@ -174,6 +215,54 @@ export function Join() {
           </Button>
         </Card>
       </div>
+
+      {showDemoInfo ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowDemoInfo(false)}
+        >
+          <div className="w-full max-w-md" onClick={event => event.stopPropagation()}>
+            <Card className="grid gap-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="grid gap-1">
+                  <h2 className="text-lg font-semibold text-ink">Demo starten</h2>
+                  <p className="text-sm text-muted">
+                    Demo laeuft lokal mit fest verdrahteter Standard-Konfiguration.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="text-sm text-muted"
+                  onClick={() => setShowDemoInfo(false)}
+                  aria-label="Demo Hinweise schliessen"
+                >
+                  Schliessen
+                </button>
+              </div>
+
+              <div className="grid gap-2 rounded-swiss border border-grid-border bg-bg px-4 py-3">
+                <div className="text-xs uppercase tracking-wide text-muted">Demo-Code</div>
+                <div className="text-xl font-semibold tracking-[0.3em] text-ink">{PRIMARY_DEMO_JOIN_CODE}</div>
+                <div className="text-xs text-muted">Direktlink: #/demo</div>
+              </div>
+
+              <div className="grid gap-2 text-sm text-muted">
+                <div>Keine echte Klasse noetig.</div>
+                <div>Events bleiben lokal und werden nicht synchronisiert.</div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={onDemoFill}>
+                  Code einsetzen
+                </Button>
+                <Button onClick={onDemoStart}>Demo starten</Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
