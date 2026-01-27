@@ -8,6 +8,8 @@ import {
 } from "@triangle/ui-kit";
 import { supabase } from "./services/supabaseClient";
 
+type ProductSetId = "products_3_4" | "products_2" | "squares" | "cardinals" | "all_products";
+
 interface ClassRow {
   id: string;
   name: string;
@@ -20,7 +22,18 @@ interface KpiSummary {
   accuracy: number;
   reveals: number;
   bottlenecks: Array<{ product: number; revealRate: number; total: number }>;
+  perStudent: Array<{ studentLabel: string; total: number; accuracy: number; reveals: number }>;
 }
+
+const PRODUCT_SET_OPTIONS: Array<{ id: ProductSetId; label: string }> = [
+  { id: "products_3_4", label: "Produkte 3/4" },
+  { id: "products_2", label: "Produkte 2" },
+  { id: "squares", label: "Quadrate" },
+  { id: "cardinals", label: "Kardinale" },
+  { id: "all_products", label: "Alle Produkte" },
+];
+
+const SESSION_LENGTHS = [10, 25, 40] as const;
 
 function randomJoinCode(length = 6) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -44,6 +57,11 @@ export function App() {
   const [className, setClassName] = React.useState("");
   const [classError, setClassError] = React.useState<string | null>(null);
   const [loadingClasses, setLoadingClasses] = React.useState(false);
+  const [defaultMode, setDefaultMode] = React.useState<"learn" | "test">("learn");
+  const [sessionLength, setSessionLength] = React.useState<(typeof SESSION_LENGTHS)[number]>(25);
+  const [divisionEnabled, setDivisionEnabled] = React.useState(true);
+  const [squareMode, setSquareMode] = React.useState<"default" | "single">("default");
+  const [productSets, setProductSets] = React.useState<ProductSetId[]>(["products_3_4"]);
 
   const [kpis, setKpis] = React.useState<KpiSummary | null>(null);
   const [loadingKpis, setLoadingKpis] = React.useState(false);
@@ -91,9 +109,27 @@ export function App() {
 
   const loadKpis = React.useCallback(async (classId: string) => {
     setLoadingKpis(true);
+    const { data: studentsData, error: studentsError } = await supabase
+      .from("students")
+      .select("student_ref, student_number")
+      .eq("class_id", classId);
+
+    if (studentsError) {
+      setKpis(null);
+      setLoadingKpis(false);
+      return;
+    }
+
+    const studentMap = new Map<string, number>();
+    for (const row of studentsData ?? []) {
+      if (typeof row.student_ref === "string" && typeof row.student_number === "number") {
+        studentMap.set(row.student_ref, row.student_number);
+      }
+    }
+
     const { data, error } = await supabase
       .from("task_end_events")
-      .select("family_product, result")
+      .select("family_product, result, student_ref")
       .eq("class_id", classId);
 
     if (error) {
@@ -106,6 +142,7 @@ export function App() {
     let correct = 0;
     let reveals = 0;
     const perFamily = new Map<number, { total: number; reveals: number }>();
+    const perStudent = new Map<string, { total: number; correct: number; reveals: number }>();
 
     for (const row of data ?? []) {
       total += 1;
@@ -118,6 +155,15 @@ export function App() {
       entry.total += 1;
       if (row.result === "reveal") entry.reveals += 1;
       perFamily.set(product, entry);
+
+      const studentRef = typeof row.student_ref === "string" ? row.student_ref : null;
+      if (studentRef) {
+        const studentEntry = perStudent.get(studentRef) ?? { total: 0, correct: 0, reveals: 0 };
+        studentEntry.total += 1;
+        if (row.result === "correct") studentEntry.correct += 1;
+        if (row.result === "reveal") studentEntry.reveals += 1;
+        perStudent.set(studentRef, studentEntry);
+      }
     }
 
     const bottlenecks = [...perFamily.entries()]
@@ -129,11 +175,25 @@ export function App() {
       .sort((a, b) => b.revealRate - a.revealRate || b.total - a.total)
       .slice(0, 3);
 
+    const perStudentRows = [...perStudent.entries()]
+      .map(([studentRef, stats]) => {
+        const number = studentMap.get(studentRef);
+        const label = number ? `Schueler ${number}` : "Schueler ?";
+        return {
+          studentLabel: label,
+          total: stats.total,
+          accuracy: stats.total > 0 ? stats.correct / stats.total : 0,
+          reveals: stats.reveals,
+        };
+      })
+      .sort((a, b) => b.reveals - a.reveals || b.total - a.total);
+
     setKpis({
       total,
       accuracy: total > 0 ? correct / total : 0,
       reveals,
       bottlenecks,
+      perStudent: perStudentRows,
     });
     setLoadingKpis(false);
   }, []);
@@ -165,6 +225,10 @@ export function App() {
       setClassError("Klassenname fehlt.");
       return;
     }
+    if (productSets.length === 0) {
+      setClassError("Mindestens ein Produktset waehlen.");
+      return;
+    }
 
     setClassError(null);
     setLoadingClasses(true);
@@ -176,6 +240,12 @@ export function App() {
         name,
         join_code: joinCode,
         teacher_id: session.user.id,
+        pack_id: "core",
+        default_mode: defaultMode,
+        product_sets: productSets,
+        session_length: sessionLength,
+        division_enabled: divisionEnabled,
+        square_mode: squareMode,
       });
 
       if (!error) {
@@ -254,6 +324,15 @@ export function App() {
   }
 
   const activeClass = classes.find(item => item.id === activeClassId);
+  const studentAppUrl = (import.meta.env.VITE_STUDENT_APP_URL as string | undefined) ?? "";
+  const fallbackBase =
+    typeof window !== "undefined" && window.location
+      ? `${window.location.protocol}//${window.location.hostname}${
+          window.location.port === "5174" ? ":5173" : window.location.port ? `:${window.location.port}` : ""
+        }`
+      : "";
+  const joinBase = (studentAppUrl || fallbackBase).replace(/\/$/, "");
+  const joinUrl = activeClass ? `${joinBase}/?code=${activeClass.join_code}` : "";
 
   return (
     <main className="min-h-screen bg-bg text-ink font-sans">
@@ -285,6 +364,87 @@ export function App() {
                 Klasse erstellen
               </Button>
             </div>
+            <div className="grid gap-4 rounded-swiss border border-grid-border bg-bg px-4 py-4">
+              <div className="text-sm font-semibold text-ink">Standardeinstellungen</div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-2 text-sm text-muted">
+                  Modus
+                  <select
+                    className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-ink"
+                    value={defaultMode}
+                    onChange={event => setDefaultMode(event.target.value as "learn" | "test")}
+                  >
+                    <option value="learn">Lernen</option>
+                    <option value="test">Test</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm text-muted">
+                  Sitzungslaenge
+                  <select
+                    className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-ink"
+                    value={sessionLength}
+                    onChange={event => setSessionLength(Number(event.target.value) as (typeof SESSION_LENGTHS)[number])}
+                  >
+                    {SESSION_LENGTHS.map(value => (
+                      <option key={value} value={value}>
+                        {value} Aufgaben
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid gap-2">
+                <div className="text-sm text-muted">Produktsets</div>
+                <div className="flex flex-wrap gap-2">
+                  {PRODUCT_SET_OPTIONS.map(option => {
+                    const selected = productSets.includes(option.id);
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={`rounded-swiss border px-3 py-2 text-sm ${
+                          selected ? "border-primary bg-surface" : "border-grid-border bg-bg"
+                        }`}
+                        aria-pressed={selected}
+                        onClick={() => {
+                          setProductSets(prev =>
+                            prev.includes(option.id)
+                              ? prev.filter(item => item !== option.id)
+                              : [...prev, option.id]
+                          );
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex items-center gap-2 text-sm text-muted">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border border-grid-border"
+                    checked={divisionEnabled}
+                    onChange={event => setDivisionEnabled(event.target.checked)}
+                  />
+                  Division aktiv
+                </label>
+                <label className="grid gap-2 text-sm text-muted">
+                  Quadrate
+                  <select
+                    className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-ink"
+                    value={squareMode}
+                    onChange={event => setSquareMode(event.target.value as "default" | "single")}
+                  >
+                    <option value="default">Standard</option>
+                    <option value="single">Ein Feld fuer beide Faktoren</option>
+                  </select>
+                </label>
+              </div>
+            </div>
             {classError ? <div className="text-sm text-warning">{classError}</div> : null}
 
             <div className="grid gap-2">
@@ -313,6 +473,28 @@ export function App() {
                 ))
               )}
             </div>
+          </Card>
+        </DashboardSection>
+
+        <DashboardSection title="Beitritt">
+          <Card elevated className="grid gap-4">
+            {activeClass ? (
+              <>
+                <div className="text-sm text-muted">Klasse: {activeClass.name}</div>
+                <div className="grid gap-2">
+                  <div className="text-micro uppercase tracking-wide text-muted">Join-Code</div>
+                  <div className="text-3xl font-semibold text-ink">{activeClass.join_code}</div>
+                </div>
+                <div className="grid gap-2">
+                  <div className="text-micro uppercase tracking-wide text-muted">Join-URL</div>
+                  <div className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-sm text-ink break-all">
+                    {joinUrl || "Studenten-URL fehlt. Bitte VITE_STUDENT_APP_URL setzen."}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted">Keine Klasse gewaehlt.</div>
+            )}
           </Card>
         </DashboardSection>
 
@@ -353,6 +535,26 @@ export function App() {
               rows={(kpis?.bottlenecks ?? []).map(row => ({
                 product: row.product,
                 revealRate: `${Math.round(row.revealRate * 100)}%`,
+                total: row.total,
+              }))}
+            />
+            {loadingKpis ? <div className="text-sm text-muted">Lade KPIs...</div> : null}
+          </Card>
+        </DashboardSection>
+
+        <DashboardSection title="Schuelerinnen und Schueler">
+          <Card elevated className="grid gap-4">
+            <DataTable
+              columns={[
+                { key: "studentLabel", label: "Schueler" },
+                { key: "accuracy", label: "Genauigkeit", align: "right" },
+                { key: "reveals", label: "Aufgedeckt", align: "right" },
+                { key: "total", label: "Versuche", align: "right" },
+              ]}
+              rows={(kpis?.perStudent ?? []).map(row => ({
+                studentLabel: row.studentLabel,
+                accuracy: `${Math.round(row.accuracy * 100)}%`,
+                reveals: row.reveals,
                 total: row.total,
               }))}
             />
