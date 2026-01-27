@@ -70,7 +70,7 @@ export const TriangleDisplay = React.forwardRef<HTMLDivElement, TriangleDisplayP
     return (
       <div
         ref={ref}
-        className={cn("triangle-container", className)}
+        className={cn("triangle-container relative", className)}
         role="img"
         aria-label={label}
         data-status={status}
@@ -81,14 +81,13 @@ export const TriangleDisplay = React.forwardRef<HTMLDivElement, TriangleDisplayP
           <path d="M48 0 L16 24 M48 0 L80 24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
 
+        <div className="triangle-op" aria-hidden="true">
+          {operation === "mul" ? "\u00D7" : "\u00F7"}
+        </div>
+
         <div className="flex items-center gap-8">
           <div className={slotClass("factorA", "factor")}>{factorA}</div>
           <div className={slotClass("factorB", "factor")}>{factorB}</div>
-        </div>
-
-        <div className="flex items-center gap-6 mt-2 text-xs text-muted-foreground">
-          <span className={cn(operation === "mul" && "text-primary font-medium")}>{"\u00D7"}</span>
-          <span className={cn(operation === "div" && "text-primary font-medium")}>{"\u00F7"}</span>
         </div>
       </div>
     );

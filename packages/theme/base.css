@@ -91,6 +91,10 @@
     @apply flex flex-col items-center gap-3;
   }
 
+  .triangle-op {
+    @apply absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2 text-primary font-semibold text-base;
+  }
+
   .triangle-node {
     @apply w-14 h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center font-semibold text-lg md:text-xl transition-all duration-standard ease-swiss;
   }
