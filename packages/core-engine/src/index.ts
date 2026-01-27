@@ -5,6 +5,7 @@ export * from "./engine/errorTyping";
 export * from "./engine/families";
 export * from "./engine/rng";
 export * from "./engine/gamification";
+export * from "./engine/phaseMachine";
 export * from "./engine/learnQueue";
 export * from "./engine/requeue";
 export * from "./session/sessionManager";

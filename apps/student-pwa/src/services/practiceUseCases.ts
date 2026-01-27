@@ -1,5 +1,14 @@
 import type { BaseEvent, StudentEvent } from "@triangle/types";
-import { appendEvent, getLastAckTs, queryEvents, setLastAckTs, submitEvents } from "@triangle/storage";
+import {
+  appendEvent,
+  chunkEvents,
+  computeSinceTs,
+  getLastAckTs,
+  queryEvents,
+  setLastAckTs,
+  submitEvents,
+  updateCursor,
+} from "@triangle/storage";
 
 export interface EventContext {
   deviceId: string;
@@ -42,7 +51,7 @@ export async function syncPendingEvents(config: SyncConfig, context: EventContex
   if (!config.supabaseUrl || !config.supabaseAnonKey) return { accepted: 0, deduped: 0, serverTs: Date.now() };
 
   const lastAckTs = await getLastAckTs();
-  const sinceTs = Math.max(0, (lastAckTs ?? 0) - SYNC_OVERLAP_MS);
+  const sinceTs = computeSinceTs(lastAckTs, SYNC_OVERLAP_MS);
   const events = await queryEvents({ studentRef: context.studentRef, sinceTs });
 
   if (events.length === 0) return { accepted: 0, deduped: 0, serverTs: Date.now() };
@@ -50,9 +59,9 @@ export async function syncPendingEvents(config: SyncConfig, context: EventContex
   let accepted = 0;
   let deduped = 0;
   let serverTs = lastAckTs ?? Date.now();
+  const batches = chunkEvents(events, SYNC_BATCH_SIZE);
 
-  for (let i = 0; i < events.length; i += SYNC_BATCH_SIZE) {
-    const batch = events.slice(i, i + SYNC_BATCH_SIZE);
+  for (const batch of batches) {
     const result = await submitEvents(config, {
       classId: context.classId,
       studentRef: context.studentRef,
@@ -62,7 +71,7 @@ export async function syncPendingEvents(config: SyncConfig, context: EventContex
 
     accepted += result.accepted;
     deduped += result.deduped;
-    serverTs = Math.max(serverTs, result.serverTs);
+    serverTs = updateCursor(serverTs, result.serverTs);
   }
 
   await setLastAckTs(serverTs);
