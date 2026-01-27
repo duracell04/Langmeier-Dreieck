@@ -4,6 +4,7 @@ import { cn } from "../utils/cn";
 export interface FooterLink {
   label: string;
   href: string;
+  onClick?: () => void;
 }
 
 export interface FooterProps extends React.HTMLAttributes<HTMLElement> {
@@ -25,6 +26,11 @@ export function Footer({ brand, links = [], className, ...props }: FooterProps) 
                 key={link.href}
                 href={link.href}
                 className="text-sm text-muted-foreground transition-subtle hover:text-foreground focus-ring rounded-md"
+                onClick={event => {
+                  if (!link.onClick) return;
+                  event.preventDefault();
+                  link.onClick();
+                }}
               >
                 {link.label}
               </a>

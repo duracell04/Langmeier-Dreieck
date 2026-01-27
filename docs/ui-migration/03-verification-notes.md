@@ -52,3 +52,26 @@ Plan:
   - `pnpm ui:check` initially failed due to palette examples in `spec/ui-style.md`; script updated to ignore `docs/` and `spec/`.
 - Result: all commands completed successfully after fix.
 
+## Phase G (landing parity)
+- Commands run:
+  - `pnpm ui:check`
+  - `pnpm lint`
+  - `pnpm -r --if-present typecheck`
+  - `pnpm build`
+- Result: all commands completed successfully.
+
+Files changed (non-docs):
+- `apps/teacher-dashboard/src/StyleGuide.tsx`
+- `apps/teacher-dashboard/src/main.tsx`
+- `apps/teacher-dashboard/src/marketing/Landing.tsx`
+- `apps/teacher-dashboard/src/marketing/utils.ts`
+- `apps/teacher-dashboard/src/marketing/sections/ClassroomFlow.tsx`
+- `apps/teacher-dashboard/src/marketing/sections/Credibility.tsx`
+- `apps/teacher-dashboard/src/marketing/sections/FooterSection.tsx`
+- `apps/teacher-dashboard/src/marketing/sections/Hero.tsx`
+- `apps/teacher-dashboard/src/marketing/sections/Pricing.tsx`
+- `apps/teacher-dashboard/src/marketing/sections/WhyItWorks.tsx`
+- `apps/teacher-dashboard/src/marketing/sections/icons.tsx`
+- `packages/ui-kit/src/shared/Footer.tsx`
+- `packages/ui-kit/src/shared/Navbar.tsx`
+

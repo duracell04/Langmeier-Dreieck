@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { Landing } from "./marketing/Landing";
 import { StyleGuide } from "./StyleGuide";
 import "./styles/app.css";
 
@@ -13,7 +14,11 @@ const root = createRoot(rootEl);
 
 function renderRoute() {
   const hash = window.location.hash || "#/";
-  const view = hash.startsWith("#/style-guide") ? <StyleGuide /> : <App />;
+  const view = hash.startsWith("#/landing")
+    ? <Landing />
+    : hash.startsWith("#/style-guide")
+      ? <StyleGuide />
+      : <App />;
   root.render(view);
 }
 

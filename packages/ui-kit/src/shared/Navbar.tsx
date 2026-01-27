@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 export interface NavbarLink {
   label: string;
   href: string;
+  onClick?: () => void;
 }
 
 export interface NavbarProps {
@@ -90,6 +91,11 @@ export function Navbar({
               key={link.href}
               href={link.href}
               className="text-sm text-muted-foreground transition-subtle hover:text-foreground focus-ring rounded-md px-2 py-1"
+              onClick={event => {
+                if (!link.onClick) return;
+                event.preventDefault();
+                link.onClick();
+              }}
             >
               {link.label}
             </a>
@@ -148,7 +154,13 @@ export function Navbar({
                 key={link.href}
                 href={link.href}
                 className="block py-2 text-base text-muted-foreground transition-subtle hover:text-foreground"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={event => {
+                  if (link.onClick) {
+                    event.preventDefault();
+                    link.onClick();
+                  }
+                  setMobileMenuOpen(false);
+                }}
               >
                 {link.label}
               </a>

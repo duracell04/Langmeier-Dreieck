@@ -6,6 +6,9 @@ import {
   DataTable,
   StaticTrianglePreview,
 } from "@triangle/ui-kit";
+import { Hero } from "./marketing/sections/Hero";
+import { PricingCta } from "./marketing/sections/Pricing";
+import { FeatureCard, FEATURES } from "./marketing/sections/WhyItWorks";
 
 const SWATCHES = [
   { label: "bg", className: "bg-bg" },
@@ -82,6 +85,17 @@ export function StyleGuide() {
             ]}
             rows={rows}
           />
+        </Card>
+
+        <Card className="grid gap-6">
+          <h2 className="text-lg font-semibold text-ink">Landing components</h2>
+          <div className="rounded-swiss border border-grid-border bg-bg overflow-hidden">
+            <Hero onTeacherClick={() => {}} onStudentClick={() => {}} />
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <FeatureCard feature={FEATURES[0]} index={0} />
+            <PricingCta onTeacherClick={() => {}} onStudentClick={() => {}} />
+          </div>
         </Card>
       </div>
     </main>

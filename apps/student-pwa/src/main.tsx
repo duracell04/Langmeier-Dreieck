@@ -16,7 +16,7 @@ const root = createRoot(rootEl);
 
 function renderRoute() {
   const hash = window.location.hash || "#/";
-  const view = hash.startsWith("#/landing")
+  const view = hash.startsWith("#/landing") || hash === "#/"
     ? <Landing />
     : hash.startsWith("#/style-guide")
       ? <StyleGuide />
@@ -24,7 +24,9 @@ function renderRoute() {
       ? <Results />
     : hash.startsWith("#/practice")
       ? <Practice />
-      : <Join />;
+      : hash.startsWith("#/join")
+        ? <Join />
+        : <Landing />;
   root.render(view);
 }
 
