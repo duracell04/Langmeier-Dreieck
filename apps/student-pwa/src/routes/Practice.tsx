@@ -409,7 +409,6 @@ export function Practice() {
     setStructureUsed(true);
     emitTaskEnd(task, "reveal", 2, true);
     sessionItemsRef.current += 1;
-    schedule(goNext, REVEAL_DWELL_MS);
 
     const cloned: EngineTask = {
       ...task,
@@ -421,7 +420,7 @@ export function Practice() {
   const submit = React.useCallback(() => {
     if (!task) return;
     if (!input.length) return;
-    if (phase === "success" || phase === "reveal") return;
+    if (phase === "success") return;
 
     const answer = Number(input);
     if (Number.isNaN(answer)) return;
@@ -432,6 +431,15 @@ export function Practice() {
 
     const correct = answer === expectedAnswer(task);
     emitAttempt(task, answer, correct);
+
+    if (phase === "reveal") {
+      if (correct) {
+        goNext();
+      } else {
+        setInput("");
+      }
+      return;
+    }
 
     if (correct) {
       handleCorrect();
@@ -552,7 +560,7 @@ export function Practice() {
   const feedbackDetail = phase === "reveal" ? "Diese Aufgabe kommt wieder." : undefined;
 
   const gridVisible = phase === "structure" || phase === "reveal";
-  const keypadDisabled = phase === "success" || phase === "reveal";
+  const keypadDisabled = phase === "success";
   const feedbackState: FeedbackState = phase === "solve" ? "solve" : phase;
 
   const divisorValue = task.missing === "left" ? rightValue : leftValue;
