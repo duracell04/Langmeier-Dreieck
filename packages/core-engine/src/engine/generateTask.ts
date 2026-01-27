@@ -16,6 +16,9 @@ export interface GenerateTaskOptions {
   divisionMeaning?: MaybeMixed<DivisionMeaning>;
   rng?: Rng;
   instanceId?: string;
+  pair?: [number, number];
+  swap?: "keep" | "swap" | "mix";
+  squareSharedInput?: boolean;
 }
 
 export interface GenerateTaskFromFamiliesOptions extends GenerateTaskOptions {
@@ -33,6 +36,14 @@ function pick<T>(items: T[], rng: Rng): T {
 function normalizePair(pair: [number, number]): [number, number] {
   const [a, b] = pair;
   return a <= b ? [a, b] : [b, a];
+}
+
+function applySwap(pair: [number, number], swap: "keep" | "swap" | "mix", rng: Rng): [number, number] {
+  const [a, b] = pair;
+  if (a === b) return [a, b];
+  if (swap === "swap") return [b, a];
+  if (swap === "mix") return rng() < 0.5 ? [a, b] : [b, a];
+  return [a, b];
 }
 
 function randomId(rng: Rng): string {
@@ -67,10 +78,14 @@ export function buildTaskKey(input: {
   pair: [number, number];
   missing: MissingSlot;
   divisionMeaning?: DivisionMeaning;
+  squareSharedInput?: boolean;
 }): string {
-  const [a, b] = normalizePair(input.pair);
+  const [a, b] = input.pair;
+  const [na, nb] = normalizePair(input.pair);
+  const orientation = a === b ? "same" : a === na && b === nb ? "base" : "swap";
   const meaning = input.divisionMeaning ?? "none";
-  return `${input.familyId}|${input.operation}|${a}x${b}|missing:${input.missing}|meaning:${meaning}`;
+  const square = input.squareSharedInput ? "square:shared" : "square:default";
+  return `${input.familyId}|${input.operation}|${na}x${nb}|order:${orientation}|missing:${input.missing}|meaning:${meaning}|${square}`;
 }
 
 export function generateTaskFromFamily(
@@ -78,7 +93,9 @@ export function generateTaskFromFamily(
   options: GenerateTaskOptions = {}
 ): Task {
   const rng = options.rng ?? DEFAULT_RNG;
-  const pair = normalizePair(pick(family.factorPairs, rng));
+  const basePair = options.pair ?? pick(family.factorPairs, rng);
+  const normalizedPair = normalizePair(basePair);
+  const pair = applySwap(normalizedPair, options.swap ?? "mix", rng);
   const operation = resolveOperation(options.operation, rng);
   const missing = resolveMissing(operation, options.missing, rng);
   const divisionMeaning = resolveMeaning(operation, options.divisionMeaning, rng);
@@ -100,6 +117,7 @@ export function generateTaskFromFamily(
     pair,
     missing,
     divisionMeaning,
+    squareSharedInput: options.squareSharedInput,
   });
 
   return {
@@ -110,6 +128,7 @@ export function generateTaskFromFamily(
     pair,
     missing,
     divisionMeaning,
+    squareSharedInput: options.squareSharedInput,
     product,
     left,
     right,

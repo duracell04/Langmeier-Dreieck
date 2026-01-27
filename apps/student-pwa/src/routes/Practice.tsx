@@ -12,9 +12,17 @@ import {
 import {
   SessionManager,
   buildCoreFamilies,
+  buildLearnPlan,
   createSeedFromTime,
   createSeededRng,
+  enqueueRequeue,
+  pickDueRequeue,
   pickNextTask,
+  shouldUseRequeue,
+  taskFromBlueprint,
+  type RequeueItem,
+  type RequeuePolicy,
+  type TaskSource,
 } from "@triangle/core-engine";
 import type {
   Attempt,
@@ -32,10 +40,19 @@ import { createBaseEvent, recordEvent, syncPendingEvents, type EventContext } fr
 const SESSION_TOTAL = 25;
 const SUCCESS_DWELL_MS = 700;
 const REVEAL_DWELL_MS = 1600;
-const REQUEUE_MIN_SPACING = 6;
+const REQUEUE_POLICY: RequeuePolicy = {
+  minSpacing: 6,
+  swapSpacing: 2,
+  density: {
+    maxConsecutive: 2,
+    windowSize: 4,
+    maxInWindow: 2,
+  },
+};
 const PACK_ID = "core";
 const SET_ID = "core";
 const MODE: "learn" | "test" = "test";
+const SQUARE_MODE: "default" | "single" = "default";
 
 type Phase = "solve" | "wrong1" | "structure" | "success" | "reveal";
 
@@ -70,6 +87,10 @@ function formatSlot(value: number, isMissing: boolean, input: string, reveal: bo
 
 export function Practice() {
   const families = React.useMemo(() => buildCoreFamilies(), []);
+  const learnPlan = React.useMemo(
+    () => buildLearnPlan(families, { divisionEnabled: true, squareMode: SQUARE_MODE }),
+    [families]
+  );
   const sessionManager = React.useMemo(() => new SessionManager(new IdbSessionStorage()), []);
 
   const [sessionReady, setSessionReady] = React.useState(false);
@@ -78,8 +99,10 @@ export function Practice() {
 
   const rng = React.useMemo(() => createSeededRng(rngSeed), [rngSeed]);
   const masteryRef = React.useRef<Record<string, any>>({});
-  const recentRef = React.useRef<string[]>([]);
-  const requeueRef = React.useRef<Array<{ dueIndex: number; task: EngineTask }>>([]);
+  const recentFamiliesRef = React.useRef<string[]>([]);
+  const recentTasksRef = React.useRef<EngineTask[]>([]);
+  const recentSourcesRef = React.useRef<TaskSource[]>([]);
+  const requeueRef = React.useRef<RequeueItem[]>([]);
   const taskIndexRef = React.useRef(0);
 
   const eventContextRef = React.useRef<EventContext | null>(null);
@@ -211,16 +234,9 @@ export function Practice() {
 
   React.useEffect(() => {
     if (!sessionReady || task) return;
-
-    const next = pickNextTask(families, masteryRef.current, {
-      rng,
-      recentFamilyIds: recentRef.current,
-      operation: "mix",
-      missing: "mix",
-    });
-    recentRef.current = [...recentRef.current, next.familyId].slice(-2);
+    const next = nextTask(0);
     setTask(next);
-  }, [families, rng, sessionReady, task]);
+  }, [nextTask, sessionReady, task]);
 
   React.useEffect(() => {
     taskIndexRef.current = taskIndex;
@@ -275,22 +291,47 @@ export function Practice() {
 
   const nextTask = React.useCallback(
     (nextIndex: number) => {
-      const dueIndex = requeueRef.current.findIndex(item => item.dueIndex <= nextIndex);
-      if (dueIndex >= 0) {
-        const [item] = requeueRef.current.splice(dueIndex, 1);
-        return item.task;
+      const recentSources = recentSourcesRef.current;
+      let selected: EngineTask | undefined;
+      let source: TaskSource = "new";
+
+      if (shouldUseRequeue(recentSources, REQUEUE_POLICY.density)) {
+        const pick = pickDueRequeue(requeueRef.current, nextIndex, recentTasksRef.current, REQUEUE_POLICY);
+        requeueRef.current = pick.queue;
+        if (pick.task) {
+          selected = pick.task;
+          source = "requeue";
+        }
       }
 
-      const next = pickNextTask(families, masteryRef.current, {
-        rng,
-        recentFamilyIds: recentRef.current,
-        operation: "mix",
-        missing: "mix",
-      });
-      recentRef.current = [...recentRef.current, next.familyId].slice(-2);
-      return next;
+      if (!selected) {
+        if (MODE === "learn" && learnPlan.length > 0) {
+          const planIndex = nextIndex % learnPlan.length;
+          selected = taskFromBlueprint(families, learnPlan[planIndex], rng);
+        } else {
+          selected = pickNextTask(families, masteryRef.current, {
+            rng,
+            recentFamilyIds: recentFamiliesRef.current,
+            recentTasks: recentTasksRef.current,
+            recentFamilyWindow: 3,
+            swapSpacing: REQUEUE_POLICY.swapSpacing,
+            operation: "mix",
+            missing: "mix",
+            divisionMeaning: "mix",
+            swap: "mix",
+            squareMode: SQUARE_MODE,
+            divisionEnabled: true,
+          });
+        }
+      }
+
+      recentFamiliesRef.current = [...recentFamiliesRef.current, selected.familyId].slice(-3);
+      recentTasksRef.current = [...recentTasksRef.current, selected].slice(-3);
+      recentSourcesRef.current = [...recentSourcesRef.current, source].slice(-REQUEUE_POLICY.density.windowSize);
+
+      return selected;
     },
-    [families, rng]
+    [families, learnPlan, rng]
   );
 
   const resetForNext = React.useCallback(() => {
@@ -414,8 +455,13 @@ export function Practice() {
       ...task,
       instanceId: `${task.instanceId}|rq|${crypto.randomUUID()}`,
     };
-    requeueRef.current.push({ dueIndex: taskIndexRef.current + REQUEUE_MIN_SPACING, task: cloned });
-  }, [emitTaskEnd, goNext, task]);
+    requeueRef.current = enqueueRequeue(
+      requeueRef.current,
+      cloned,
+      taskIndexRef.current,
+      REQUEUE_POLICY.minSpacing
+    );
+  }, [emitTaskEnd, task]);
 
   const submit = React.useCallback(() => {
     if (!task) return;
@@ -526,9 +572,10 @@ export function Practice() {
   const elapsedSeconds = Math.floor(elapsedMs / 1000);
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
 
+  const sharedInput = Boolean(task.squareSharedInput && (missingSlot === "factorA" || missingSlot === "factorB"));
   const triangleProduct = formatSlot(productValue, missingSlot === "product", input, reveal, correct);
-  const triangleFactorA = formatSlot(leftValue, missingSlot === "factorA", input, reveal, correct);
-  const triangleFactorB = formatSlot(rightValue, missingSlot === "factorB", input, reveal, correct);
+  const triangleFactorA = formatSlot(leftValue, sharedInput || missingSlot === "factorA", input, reveal, correct);
+  const triangleFactorB = formatSlot(rightValue, sharedInput || missingSlot === "factorB", input, reveal, correct);
 
   const lockedSlots: TriangleSlot[] =
     task.operation === "div"

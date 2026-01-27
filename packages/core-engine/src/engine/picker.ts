@@ -12,6 +12,12 @@ export interface PickerOptions {
   now?: number;
   rng?: () => number;
   recentFamilyIds?: string[];
+  recentTasks?: Task[];
+  recentFamilyWindow?: number;
+  swapSpacing?: number;
+  swap?: "keep" | "swap" | "mix";
+  divisionEnabled?: boolean;
+  squareMode?: "default" | "single";
   operation?: Operation | "mix";
   missing?: MissingSlot | "mix";
   divisionMeaning?: DivisionMeaning | "mix";
@@ -74,6 +80,15 @@ function resolveMeaning(
   return rng() < 0.5 ? "quotitive" : "partitive";
 }
 
+function pickPair(family: ProductFamily, rng: () => number): [number, number] {
+  const idx = Math.floor(rng() * family.factorPairs.length);
+  return family.factorPairs[Math.min(idx, family.factorPairs.length - 1)];
+}
+
+function isSquare(pair: [number, number]): boolean {
+  return pair[0] === pair[1];
+}
+
 export function pickNextTask(
   families: ProductFamily[],
   masteryMap: Record<string, FamilyMastery>,
@@ -83,7 +98,8 @@ export function pickNextTask(
 
   const now = options.now ?? Date.now();
   const rng = options.rng ?? Math.random;
-  const recentSet = new Set((options.recentFamilyIds ?? []).slice(-2));
+  const recentWindow = options.recentFamilyWindow ?? 3;
+  const recentSet = new Set((options.recentFamilyIds ?? []).slice(-recentWindow));
 
   const withMastery = families.map(f => ({
     family: f,
@@ -99,14 +115,66 @@ export function pickNextTask(
   const weights = selectionPool.map(item => weightForFamily(item.mastery));
   const chosen = pickWeighted(selectionPool, weights, rng);
 
-  const operation = resolveOperation(chosen.mastery, options.operation, rng);
-  const missing = resolveMissing(operation, options.missing, rng);
-  const divisionMeaning = resolveMeaning(operation, options.divisionMeaning, rng);
+  const attempts = 6;
+  const recentTasks = options.recentTasks ?? [];
+  const swapSpacing = options.swapSpacing ?? 2;
+  const divisionEnabled = options.divisionEnabled ?? true;
+  const squareMode = options.squareMode ?? "default";
 
+  for (let i = 0; i < attempts; i += 1) {
+    const operation = divisionEnabled ? resolveOperation(chosen.mastery, options.operation, rng) : "mul";
+    if (operation === "div" && chosen.family.product === 0) {
+      continue;
+    }
+
+    const missing = resolveMissing(operation, options.missing, rng);
+    const divisionMeaning = resolveMeaning(operation, options.divisionMeaning, rng);
+    const pair = pickPair(chosen.family, rng);
+    const squareSharedInput = squareMode === "single" && isSquare(pair) && missing !== "product";
+    const task = generateTaskFromFamily(chosen.family, {
+      operation,
+      missing,
+      divisionMeaning,
+      rng,
+      swap: options.swap ?? "mix",
+      pair,
+      squareSharedInput,
+    });
+
+    if (swapSpacing > 0 && violatesSwapSpacing(task, recentTasks, swapSpacing)) {
+      continue;
+    }
+    return task;
+  }
+
+  let fallbackOperation = divisionEnabled ? resolveOperation(chosen.mastery, options.operation, rng) : "mul";
+  if (fallbackOperation === "div" && chosen.family.product === 0) {
+    fallbackOperation = "mul";
+  }
+  const fallbackMissing = resolveMissing(fallbackOperation, options.missing, rng);
+  const fallbackMeaning = resolveMeaning(fallbackOperation, options.divisionMeaning, rng);
+  const fallbackPair = pickPair(chosen.family, rng);
   return generateTaskFromFamily(chosen.family, {
-    operation,
-    missing,
-    divisionMeaning,
+    operation: fallbackOperation,
+    missing: fallbackMissing,
+    divisionMeaning: fallbackMeaning,
     rng,
+    swap: options.swap ?? "mix",
+    pair: fallbackPair,
+    squareSharedInput: squareMode === "single" && isSquare(fallbackPair) && fallbackMissing !== "product",
   });
+}
+
+function isSwapPair(a: Task, b: Task): boolean {
+  if (a.operation !== "mul" || b.operation !== "mul") return false;
+  if (a.familyId !== b.familyId) return false;
+  const [aL, aR] = a.pair;
+  const [bL, bR] = b.pair;
+  if (aL === aR) return false;
+  return aL === bR && aR === bL;
+}
+
+function violatesSwapSpacing(task: Task, recentTasks: Task[], spacing: number): boolean {
+  const window = recentTasks.slice(-spacing);
+  return window.some(prev => isSwapPair(task, prev));
 }

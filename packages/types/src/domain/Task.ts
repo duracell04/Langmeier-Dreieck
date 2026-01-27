@@ -11,6 +11,7 @@ export interface Task {
   pair: [number, number];
   missing: MissingSlot;
   divisionMeaning?: DivisionMeaning;
+  squareSharedInput?: boolean;
 
   product: number | null;
   left: number | null;
