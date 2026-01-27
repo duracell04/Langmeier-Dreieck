@@ -173,7 +173,7 @@ export function App() {
         revealRate: stats.total > 0 ? stats.reveals / stats.total : 0,
       }))
       .sort((a, b) => b.revealRate - a.revealRate || b.total - a.total)
-      .slice(0, 3);
+      .slice(0, 5);
 
     const perStudentRows = [...perStudent.entries()]
       .map(([studentRef, stats]) => {
@@ -188,9 +188,10 @@ export function App() {
       })
       .sort((a, b) => b.reveals - a.reveals || b.total - a.total);
 
+    const denom = correct + reveals;
     setKpis({
       total,
-      accuracy: total > 0 ? correct / total : 0,
+      accuracy: denom > 0 ? correct / denom : 0,
       reveals,
       bottlenecks,
       perStudent: perStudentRows,
@@ -236,16 +237,27 @@ export function App() {
     let created = false;
     for (let i = 0; i < 3; i += 1) {
       const joinCode = randomJoinCode();
+      const settings = {
+        packId: "core",
+        defaultMode,
+        productSets,
+        sessionLength,
+        divisionEnabled,
+        squareMode,
+      };
+
       const { error } = await supabase.from("classes").insert({
         name,
         join_code: joinCode,
         teacher_id: session.user.id,
-        pack_id: "core",
-        default_mode: defaultMode,
-        product_sets: productSets,
-        session_length: sessionLength,
-        division_enabled: divisionEnabled,
-        square_mode: squareMode,
+        teacher_user_id: session.user.id,
+        pack_id: settings.packId,
+        default_mode: settings.defaultMode,
+        product_sets: settings.productSets,
+        session_length: settings.sessionLength,
+        division_enabled: settings.divisionEnabled,
+        square_mode: settings.squareMode,
+        settings,
       });
 
       if (!error) {
@@ -332,7 +344,7 @@ export function App() {
         }`
       : "";
   const joinBase = (studentAppUrl || fallbackBase).replace(/\/$/, "");
-  const joinUrl = activeClass ? `${joinBase}/?code=${activeClass.join_code}` : "";
+  const joinUrl = activeClass ? `${joinBase}/join?code=${activeClass.join_code}` : "";
 
   return (
     <main className="min-h-screen bg-bg text-ink font-sans">

@@ -20,6 +20,7 @@ export const ClassDefaultsSchema = z.object({
 export const JoinClassRequestSchema = z.object({
   joinCode: z.string().min(3).max(12),
   deviceId: z.string().min(6).optional(),
+  identityToken: z.string().min(3).max(64).optional(),
 });
 
 export const BaseEventSchema = z.object({

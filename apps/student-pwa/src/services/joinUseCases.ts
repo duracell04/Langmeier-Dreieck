@@ -10,8 +10,11 @@ import {
   setDeviceId,
   setIdentityMarker,
   setJoinCode,
+  setPackId,
   setStudentNumber,
   setStudentRef,
+  setClassConfig,
+  type ClassConfig,
 } from "@triangle/storage";
 
 export interface JoinClassResult {
@@ -19,6 +22,7 @@ export interface JoinClassResult {
   studentRef: string;
   studentNumber: number;
   joinCode: string;
+  classConfig: ClassConfig;
 }
 
 export interface StoredIdentity {
@@ -27,6 +31,28 @@ export interface StoredIdentity {
   studentNumber: number;
   joinCode: string;
   identityMarker: string | null;
+}
+
+const DEFAULT_CLASS_CONFIG: ClassConfig = {
+  packId: "core",
+  defaultMode: "learn",
+  productSets: ["products_3_4"],
+  sessionLength: 25,
+  divisionEnabled: true,
+  squareMode: "default",
+};
+
+function parseClassConfig(input: unknown): ClassConfig | null {
+  if (!input || typeof input !== "object") return null;
+  const item = input as ClassConfig;
+  const validLength = item.sessionLength === 10 || item.sessionLength === 25 || item.sessionLength === 40;
+  const validMode = item.defaultMode === "learn" || item.defaultMode === "test";
+  const validSquare = item.squareMode === "default" || item.squareMode === "single";
+  if (!validLength || !validMode || !validSquare) return null;
+  if (typeof item.packId !== "string") return null;
+  if (!Array.isArray(item.productSets)) return null;
+  if (typeof item.divisionEnabled !== "boolean") return null;
+  return item;
 }
 
 export async function loadStoredIdentity(): Promise<StoredIdentity | null> {
@@ -76,6 +102,7 @@ export async function joinClass(joinCode: string, identityMarker?: string | null
 
   if (import.meta.env.DEV && (normalized === "DEMO" || normalized === "DEMO12")) {
     const demoRef = `demo-${crypto.randomUUID()}`;
+    const classConfig = DEFAULT_CLASS_CONFIG;
     const result = {
       classId: "demo-class",
       studentRef: demoRef,
@@ -86,7 +113,9 @@ export async function joinClass(joinCode: string, identityMarker?: string | null
       joinCode: normalized,
       identityMarker: identityMarker ?? null,
     });
-    return { ...result, joinCode: normalized };
+    await setPackId(classConfig.packId);
+    await setClassConfig(classConfig);
+    return { ...result, joinCode: normalized, classConfig };
   }
 
   const { data, error } = await supabase.functions.invoke("join_class", {
@@ -109,6 +138,8 @@ export async function joinClass(joinCode: string, identityMarker?: string | null
     throw new Error("join_failed");
   }
 
+  const classConfig = parseClassConfig(data.classConfig) ?? DEFAULT_CLASS_CONFIG;
+
   await persistIdentity({
     classId: data.classId,
     studentRef: data.studentRef,
@@ -117,7 +148,10 @@ export async function joinClass(joinCode: string, identityMarker?: string | null
     identityMarker: identityMarker ?? null,
   });
 
-  return { classId: data.classId, studentRef: data.studentRef, studentNumber, joinCode: normalized };
+  await setPackId(classConfig.packId);
+  await setClassConfig(classConfig);
+
+  return { classId: data.classId, studentRef: data.studentRef, studentNumber, joinCode: normalized, classConfig };
 }
 
 export async function clearStoredIdentity(): Promise<void> {
@@ -127,5 +161,7 @@ export async function clearStoredIdentity(): Promise<void> {
     setStudentNumber(null),
     setJoinCode(null),
     setIdentityMarker(null),
+    setPackId(null),
+    setClassConfig(null),
   ]);
 }

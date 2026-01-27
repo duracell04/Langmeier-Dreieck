@@ -14,7 +14,17 @@ export type MetaKey =
   | "lastAckTs"
   | "activeSession"
   | "joinCode"
-  | "identityMarker";
+  | "identityMarker"
+  | "classConfig";
+
+export interface ClassConfig {
+  packId: string;
+  defaultMode: "learn" | "test";
+  productSets: string[];
+  sessionLength: 10 | 25 | 40;
+  divisionEnabled: boolean;
+  squareMode: "default" | "single";
+}
 
 interface MetaRecord {
   key: MetaKey;
@@ -125,6 +135,38 @@ export async function getPackId(): Promise<string | null> {
 
 export async function setPackId(value: string | null): Promise<void> {
   return setMeta("packId", value);
+}
+
+function isClassConfig(value: unknown): value is ClassConfig {
+  if (!value || typeof value !== "object") return false;
+  const item = value as ClassConfig;
+  const validSessionLength = item.sessionLength === 10 || item.sessionLength === 25 || item.sessionLength === 40;
+  const validMode = item.defaultMode === "learn" || item.defaultMode === "test";
+  const validSquare = item.squareMode === "default" || item.squareMode === "single";
+  return (
+    typeof item.packId === "string" &&
+    validMode &&
+    Array.isArray(item.productSets) &&
+    validSessionLength &&
+    typeof item.divisionEnabled === "boolean" &&
+    validSquare
+  );
+}
+
+export async function getClassConfig(): Promise<ClassConfig | null> {
+  const raw = await getMeta("classConfig");
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return isClassConfig(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setClassConfig(value: ClassConfig | null): Promise<void> {
+  if (!value) return setMeta("classConfig", null);
+  return setMeta("classConfig", JSON.stringify(value));
 }
 
 export async function getLastAckTs(): Promise<number | null> {

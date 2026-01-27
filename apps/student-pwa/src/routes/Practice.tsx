@@ -36,10 +36,16 @@ import type {
   TaskEndMissingSlot,
   LockedRole,
 } from "@triangle/types";
-import { IdbSessionStorage, getClassId, getDeviceId, getStudentRef } from "@triangle/storage";
+import {
+  IdbSessionStorage,
+  getClassConfig,
+  getClassId,
+  getDeviceId,
+  getStudentRef,
+  type ClassConfig,
+} from "@triangle/storage";
 import { createBaseEvent, recordEvent, syncPendingEvents, type EventContext } from "../services/practiceUseCases";
 
-const SESSION_TOTAL = 25;
 const SUCCESS_DWELL_MS = 700;
 const REVEAL_DWELL_MS = 1600;
 const REQUEUE_POLICY: RequeuePolicy = {
@@ -51,10 +57,14 @@ const REQUEUE_POLICY: RequeuePolicy = {
     maxInWindow: 2,
   },
 };
-const PACK_ID = "core";
-const SET_ID = "core";
-const MODE: "learn" | "test" = "test";
-const SQUARE_MODE: "default" | "single" = "default";
+const DEFAULT_CLASS_CONFIG: ClassConfig = {
+  packId: "core",
+  defaultMode: "learn",
+  productSets: ["products_3_4"],
+  sessionLength: 25,
+  divisionEnabled: true,
+  squareMode: "default",
+};
 
 type Phase = "solve" | "wrong1" | "structure" | "success" | "reveal";
 
@@ -89,17 +99,28 @@ function formatSlot(value: number, isMissing: boolean, input: string, reveal: bo
 
 export function Practice() {
   const families = React.useMemo(() => buildCoreFamilies(), []);
-  const learnPlan = React.useMemo(
-    () => buildLearnPlan(families, { divisionEnabled: true, squareMode: SQUARE_MODE }),
-    [families]
-  );
   const sessionManager = React.useMemo(() => new SessionManager(new IdbSessionStorage()), []);
 
   const [sessionReady, setSessionReady] = React.useState(false);
   const [sessionId, setSessionId] = React.useState<string | null>(null);
   const [rngSeed, setRngSeed] = React.useState<number>(1);
+  const [classConfig, setClassConfig] = React.useState<ClassConfig | null>(null);
+  const [configReady, setConfigReady] = React.useState(false);
+  const [sessionMode, setSessionMode] = React.useState<"learn" | "test">(DEFAULT_CLASS_CONFIG.defaultMode);
+
+  const activeConfig = classConfig ?? DEFAULT_CLASS_CONFIG;
+  const sessionTotal = activeConfig.sessionLength;
+  const squareMode = activeConfig.squareMode;
+  const divisionEnabled = activeConfig.divisionEnabled;
+  const mode = sessionMode;
+  const packId = activeConfig.packId;
+  const setId = activeConfig.packId;
 
   const rng = React.useMemo(() => createSeededRng(rngSeed), [rngSeed]);
+  const learnPlan = React.useMemo(
+    () => buildLearnPlan(families, { divisionEnabled, squareMode }),
+    [divisionEnabled, families, squareMode]
+  );
   const masteryRef = React.useRef<Record<string, any>>({});
   const recentFamiliesRef = React.useRef<string[]>([]);
   const recentTasksRef = React.useRef<EngineTask[]>([]);
@@ -192,7 +213,20 @@ export function Practice() {
 
   React.useEffect(() => {
     let active = true;
+    getClassConfig().then(config => {
+      if (!active) return;
+      setClassConfig(config ?? DEFAULT_CLASS_CONFIG);
+      setConfigReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    let active = true;
     (async () => {
+      if (!configReady) return;
       const [deviceId, studentRef, classId] = await Promise.all([
         getDeviceId(),
         getStudentRef(),
@@ -211,9 +245,9 @@ export function Practice() {
           sessionId: crypto.randomUUID(),
           studentRef,
           classId: classId ?? undefined,
-          packId: PACK_ID,
-          mode: MODE,
-          setId: SET_ID,
+          packId,
+          mode: activeConfig.defaultMode,
+          setId,
           startedAt: Date.now(),
           rngSeed: createSeedFromTime(),
         });
@@ -231,6 +265,7 @@ export function Practice() {
 
       setSessionId(session.sessionId);
       setRngSeed(session.rngSeed);
+      setSessionMode(session.mode);
       sessionStartedAtRef.current = session.startedAt;
       setSessionReady(true);
 
@@ -250,7 +285,7 @@ export function Practice() {
     return () => {
       active = false;
     };
-  }, [scheduleSync, sessionManager]);
+  }, [activeConfig.defaultMode, configReady, packId, scheduleSync, sessionManager, setId]);
 
   const nextTask = React.useCallback(
     (nextIndex: number) => {
@@ -268,7 +303,7 @@ export function Practice() {
       }
 
       if (!selected) {
-        if (MODE === "learn" && learnPlan.length > 0) {
+        if (mode === "learn" && learnPlan.length > 0) {
           const planIndex = nextIndex % learnPlan.length;
           selected = taskFromBlueprint(families, learnPlan[planIndex], rng);
         } else {
@@ -282,8 +317,8 @@ export function Practice() {
             missing: "mix",
             divisionMeaning: "mix",
             swap: "mix",
-            squareMode: SQUARE_MODE,
-            divisionEnabled: true,
+            squareMode,
+            divisionEnabled,
           });
         }
       }
@@ -294,7 +329,7 @@ export function Practice() {
 
       return selected;
     },
-    [families, learnPlan, rng]
+    [divisionEnabled, families, learnPlan, mode, rng, squareMode]
   );
 
   React.useEffect(() => {
@@ -447,14 +482,14 @@ export function Practice() {
     emitTaskEnd(task, "correct", attemptsBeforeEnd, structureUsed);
     sessionItemsRef.current += 1;
     sessionCorrectRef.current += 1;
-    if (sessionItemsRef.current >= SESSION_TOTAL) {
+    if (sessionItemsRef.current >= sessionTotal) {
       schedule(() => {
         window.location.hash = "#/results";
       }, SUCCESS_DWELL_MS);
       return;
     }
     schedule(goNext, SUCCESS_DWELL_MS);
-  }, [attemptsBeforeEnd, emitTaskEnd, goNext, schedule, structureUsed, task]);
+  }, [attemptsBeforeEnd, emitTaskEnd, goNext, schedule, sessionTotal, structureUsed, task]);
 
   const handleFirstWrong = React.useCallback(() => {
     setAttemptsBeforeEnd(1);
@@ -487,14 +522,14 @@ export function Practice() {
       taskIndexRef.current,
       REQUEUE_POLICY.minSpacing
     );
-    if (sessionItemsRef.current >= SESSION_TOTAL) {
+    if (sessionItemsRef.current >= sessionTotal) {
       schedule(() => {
         window.location.hash = "#/results";
       }, REVEAL_DWELL_MS);
       return;
     }
     schedule(goNext, REVEAL_DWELL_MS);
-  }, [emitTaskEnd, goNext, schedule, task]);
+  }, [emitTaskEnd, goNext, schedule, sessionTotal, task]);
 
   const submit = React.useCallback(() => {
     if (!task) return;
@@ -597,7 +632,7 @@ export function Practice() {
   }
 
   const correct = expectedAnswer(task);
-  const progress = (taskIndex % SESSION_TOTAL) + 1;
+  const progress = (taskIndex % sessionTotal) + 1;
   const [leftValue, rightValue] = task.pair;
   const productValue = leftValue * rightValue;
   const missingSlot = getMissingSlot(task.missing);
@@ -634,7 +669,7 @@ export function Practice() {
         : phase === "reveal"
           ? `Antwort: ${correct}`
           : phase === "success"
-            ? "Richtig ✓"
+            ? "Richtig \u2713"
             : undefined;
 
   const feedbackDetail = phase === "reveal" ? "Diese Aufgabe kommt wieder." : undefined;
@@ -650,9 +685,9 @@ export function Practice() {
       header={
         <>
           <div className="text-sm text-muted">
-            {progress}/{SESSION_TOTAL}
+            {progress}/{sessionTotal}
           </div>
-          {MODE === "test" ? <div className="text-sm text-muted">{elapsedLabel}</div> : null}
+          {mode === "test" ? <div className="text-sm text-muted">{elapsedLabel}</div> : null}
           <div className="flex items-center gap-2">
             {!isOnline ? (
               <Badge>Offline</Badge>
@@ -707,3 +742,7 @@ export function Practice() {
     </PracticeFrame>
   );
 }
+
+
+
+

@@ -33,4 +33,28 @@ describe("requeue policy", () => {
     const pickLater = pickDueRequeue(queue, 6, [], policy);
     expect(pickLater.task?.taskKey).toBe(baseTask.taskKey);
   });
+
+  it("defers requeue when swap spacing is violated", () => {
+    const swapTask: Task = {
+      ...baseTask,
+      taskKey: "k2",
+      instanceId: "t2",
+      familyId: "p6",
+      pair: [2, 3],
+      left: 2,
+      right: 3,
+    };
+    const swapped: Task = {
+      ...swapTask,
+      instanceId: "t3",
+      pair: [3, 2],
+      left: 3,
+      right: 2,
+    };
+
+    let queue = enqueueRequeue([], swapTask, 0, 0);
+    const pick = pickDueRequeue(queue, 0, [swapped], policy);
+    expect(pick.task).toBeUndefined();
+    expect(pick.queue[0].dueIndex).toBe(1);
+  });
 });

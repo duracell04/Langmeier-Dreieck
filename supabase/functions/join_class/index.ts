@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { JoinClassRequestSchema } from "../_shared/validation.ts";
+import { ClassDefaultsSchema, JoinClassRequestSchema } from "../_shared/validation.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -25,7 +25,16 @@ function normalizeJoinCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
+function parseSettings(raw: unknown) {
+  const parsed = ClassDefaultsSchema.safeParse(raw);
+  if (!parsed.success) return null;
+  return parsed.data;
+}
+
 function classConfigFromRow(row: Record<string, unknown>) {
+  const settings = parseSettings(row.settings);
+  if (settings) return settings;
+
   const productSets = Array.isArray(row.product_sets) ? row.product_sets.filter(item => typeof item === "string") : [];
   const sessionLength = row.session_length === 10 || row.session_length === 25 || row.session_length === 40
     ? row.session_length
@@ -67,7 +76,7 @@ serve(async req => {
 
   const { data: classRow, error: classError } = await supabase
     .from("classes")
-    .select("id, pack_id, default_mode, product_sets, session_length, division_enabled, square_mode")
+    .select("id, pack_id, default_mode, product_sets, session_length, division_enabled, square_mode, settings")
     .eq("join_code", joinCode)
     .maybeSingle();
 
