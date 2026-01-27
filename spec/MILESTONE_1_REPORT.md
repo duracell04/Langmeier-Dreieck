@@ -1,52 +1,27 @@
-# Milestone 1 Report
+# MILESTONE 1 REPORT
 
-Date: 2026-01-26
+Date: 2026-01-27
 
 ## Summary
 
-- Verified repo baseline: pnpm install/build succeed; dev server starts (terminated by timeout).
-- Updated repo reality snapshot and delivery plan per pre-coding requirements.
+Implemented Supabase schema + RLS and added edge functions for join_class and submit_events. Kept the repo build green.
 
-## Files changed/added
+## Files changed
 
-- spec/REPO_REALITY.md
-- spec/PLAN.md
-- spec/MILESTONE_1_REPORT.md
+- supabase/migrations/20260127121400_mvp_schema.sql
+- supabase/functions/join_class/index.ts
+- supabase/functions/submit_events/index.ts
 
-## Commands run + result (snippets)
+## Commands run
 
-- pnpm install
-```
-Scope: all 12 workspace projects
-Lockfile is up to date, resolution step is skipped
-Already up to date
+- pnpm -r build
 
-Done in 1.7s using pnpm v9.15.9
-```
+## Key output
 
-- pnpm dev
-```
-command timed out after 14050 milliseconds
-```
+- Build succeeded after running pnpm -r build. Packages with placeholder build scripts reported "not configured" and both Vite apps built successfully.
 
-- pnpm build
-```
-> langmeier-dreieck@0.0.0 build C:\GIT\Langmeier-Dreieck
-> pnpm -r --if-present build
+## Assumptions / decisions
 
-apps/teacher-dashboard build: ✓ built in 1.88s
-apps/student-pwa build: ✓ built in 2.00s
-```
-
-## Manual checks performed
-
-- None (dev server not manually inspected in this environment).
-
-## Known issues / follow-ups
-
-- Dev server output was not captured due to command timeout; verify locally if needed.
-- Several spec files remain empty placeholders (see spec/REPO_REALITY.md).
-
-## Next milestone plan
-
-- Milestone 2: design system + base components (tokens, primitives, spec/DESIGN_SYSTEM.md), then run pnpm dev/build.
+- RLS allows teachers to select only their own classes, students, and events; inserts happen via edge functions using the service role key.
+- join_class is idempotent by deviceId per class; otherwise assigns sequential student_number per class.
+- submit_events rejects payloads containing common PII keys and enforces studentRef/classId matching per request.

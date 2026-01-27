@@ -25,7 +25,8 @@
   --c-status-warning: #b6782d;
   --c-status-info: #3f6fa1;
 
-  --font-main: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-main: "Inter", "Segoe UI", system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji", sans-serif;
   --font-sans: var(--font-main);
 
   /* Rhythm / geometry */

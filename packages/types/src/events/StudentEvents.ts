@@ -16,6 +16,7 @@ export interface BaseEvent {
   type: string;
   eventId: string;       // UUID, client-generated
   ts: number;            // epoch ms
+  at?: number;           // optional alias of ts (epoch ms)
   deviceId: string;      // random UUID stored locally (not fingerprinting)
   studentRef: string;    // pseudonymous token (see join flow)
   classId?: string;

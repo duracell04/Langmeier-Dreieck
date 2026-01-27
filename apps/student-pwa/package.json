@@ -8,7 +8,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
     "@triangle/core-engine": "workspace:*",
+    "@triangle/storage": "workspace:*",
     "@triangle/theme": "workspace:*",
     "@triangle/ui-kit": "workspace:*",
     "react": "^18.2.0",

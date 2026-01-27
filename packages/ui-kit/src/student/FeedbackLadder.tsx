@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "../utils/cn";
 
-export type FeedbackState = "idle" | "correct" | "try_again" | "structure" | "show_answer";
+export type FeedbackState = "solve" | "wrong1" | "structure" | "success" | "reveal";
 
 export interface FeedbackLadderProps {
   state: FeedbackState;
@@ -10,17 +10,17 @@ export interface FeedbackLadderProps {
   className?: string;
 }
 
-const toneClasses: Record<Exclude<FeedbackState, "idle">, string> = {
-  correct: "border-status-success",
-  try_again: "border-status-warning",
+const toneClasses: Record<Exclude<FeedbackState, "solve">, string> = {
+  success: "border-status-success",
+  wrong1: "border-status-warning",
   structure: "border-status-info",
-  show_answer: "border-status-info",
+  reveal: "border-status-info",
 };
 
 export function FeedbackLadder({ state, message, detail, className }: FeedbackLadderProps) {
-  if (state === "idle" && !message && !detail) return null;
+  if (state === "solve" && !message && !detail) return null;
 
-  const tone = state === "idle" ? "border-grid-border" : toneClasses[state];
+  const tone = state === "solve" ? "border-grid-border" : toneClasses[state];
 
   return (
     <div

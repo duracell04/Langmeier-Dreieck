@@ -6,6 +6,7 @@ export const BaseEventSchema = z.object({
   type: z.string(),
   eventId: z.string().min(10),
   ts: z.number().int().positive(),
+  at: z.number().int().positive().optional(),
   deviceId: z.string().min(10),
   studentRef: z.string().min(6),
   classId: z.string().optional(),

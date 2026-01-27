@@ -36,6 +36,11 @@ pnpm --filter @triangle/teacher-dashboard dev
 
 Vite dev server: http://localhost:5174
 
+### Supabase (MVP backend)
+
+For event sync and teacher auth, set up Supabase and env vars.
+See `docs/supabase-mvp.md` for the full checklist.
+
 ### API (placeholder)
 
 ```powershell

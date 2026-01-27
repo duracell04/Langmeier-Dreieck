@@ -9,9 +9,13 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "node -e \"console.log('core-engine build not configured')\""
+    "build": "node -e \"console.log('core-engine build not configured')\"",
+    "test": "vitest run"
   },
   "dependencies": {
     "@triangle/types": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.0"
   }
 }

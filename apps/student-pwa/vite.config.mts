@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@triangle/core-engine": path.resolve(workspaceRoot, "packages/core-engine/src/index.ts"),
+      "@triangle/storage": path.resolve(workspaceRoot, "packages/storage/src/index.ts"),
     },
   },
   server: {
@@ -19,6 +20,6 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ["@triangle/core-engine"],
+    include: ["@triangle/core-engine", "@triangle/storage"],
   },
 });

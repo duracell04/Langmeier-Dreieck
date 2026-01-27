@@ -295,3 +295,19 @@ All rights reserved unless otherwise specified. See `LICENSE` (or contact the ma
 If you are a school interested in a pilot (CH/DACH), see `/docs/pilots.md`.
 
 If you want, I can also generate the **supporting docs** this README points to (e.g., `/docs/mastery-algorithm.md`, `/docs/offline-sync.md`, `/docs/privacy-posture.md`) in the same “audit-ready” style, plus a minimal `events-schema.json` and a `mastery-sim.ts` simulation test scaffold.
+
+---
+
+## MVP Supabase setup (required for sync)
+
+This MVP uses Supabase only (no custom backend). For full steps see `docs/supabase-mvp.md`.
+
+Quick summary:
+- Create a Supabase project (or run `supabase start` locally).
+- Apply migrations in `supabase/migrations`.
+- Deploy edge functions `join_class` and `submit_events`.
+- Set app env vars (both apps):
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_ANON_KEY`
+
+Students join via the `join_class` edge function and events are submitted only via `submit_events`.

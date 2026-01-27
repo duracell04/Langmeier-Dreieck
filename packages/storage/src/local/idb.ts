@@ -4,7 +4,15 @@ const DB_VERSION = 1;
 const STORE_META = "meta";
 const STORE_EVENTS = "events";
 
-export type MetaKey = "deviceId" | "studentRef" | "sessionId" | "activeSession";
+export type MetaKey =
+  | "deviceId"
+  | "studentRef"
+  | "sessionId"
+  | "classId"
+  | "studentNumber"
+  | "packId"
+  | "lastAckTs"
+  | "activeSession";
 
 interface MetaRecord {
   key: MetaKey;
@@ -81,12 +89,52 @@ export async function setDeviceId(value: string | null): Promise<void> {
   return setMeta("deviceId", value);
 }
 
+export async function getClassId(): Promise<string | null> {
+  return getMeta("classId");
+}
+
+export async function setClassId(value: string | null): Promise<void> {
+  return setMeta("classId", value);
+}
+
 export async function getStudentRef(): Promise<string | null> {
   return getMeta("studentRef");
 }
 
 export async function setStudentRef(value: string | null): Promise<void> {
   return setMeta("studentRef", value);
+}
+
+export async function getStudentNumber(): Promise<number | null> {
+  const raw = await getMeta("studentNumber");
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export async function setStudentNumber(value: number | null): Promise<void> {
+  if (value === null) return setMeta("studentNumber", null);
+  return setMeta("studentNumber", String(value));
+}
+
+export async function getPackId(): Promise<string | null> {
+  return getMeta("packId");
+}
+
+export async function setPackId(value: string | null): Promise<void> {
+  return setMeta("packId", value);
+}
+
+export async function getLastAckTs(): Promise<number | null> {
+  const raw = await getMeta("lastAckTs");
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export async function setLastAckTs(value: number | null): Promise<void> {
+  if (value === null) return setMeta("lastAckTs", null);
+  return setMeta("lastAckTs", String(value));
 }
 
 export async function getSessionId(): Promise<string | null> {

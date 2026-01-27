@@ -14,6 +14,7 @@ This document is the human contract for student events. Keep in sync with:
   type: string;
   eventId: string;   // UUID
   ts: number;        // epoch ms
+  at?: number;       // optional alias of ts
   deviceId: string;  // local UUID (not fingerprinting)
   studentRef: string;
   classId?: string;
