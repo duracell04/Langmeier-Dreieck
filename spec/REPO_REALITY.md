@@ -5,6 +5,11 @@ Date: 2026-01-26
 This file summarizes the repo as observed before coding. If this document
 conflicts with spec files, the spec files win.
 
+## Stage clarity
+
+- Current repo stage: **Prototype** (local-only backend/persistence).
+- MVP target: **Supabase-backed backend** with deployable UX/UI and real teacher/student usage.
+
 ## High-level structure (workspace)
 
 - apps/

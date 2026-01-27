@@ -1,9 +1,15 @@
-# PLAN (MVP delivery)
+# PLAN (Prototype -> MVP)
 
 Date: 2026-01-26
 
 This plan follows repo contracts and the user milestone list. It favors
 small, verified increments and keeps the workspace layout intact.
+
+## Stage clarity
+
+- Prototype (current scope): minimal frontend + local-only backend/persistence.
+- MVP (next): deployable release with a Supabase-backed backend and real teacher/student usage.
+- Monetization is explicitly later than MVP.
 
 ## Architecture summary
 
@@ -18,7 +24,8 @@ small, verified increments and keeps the workspace layout intact.
   - packages/types: canonical event and domain types.
   - packages/ui-kit: base primitives + practice UI pieces.
 - Persistence:
-  - localStorage versioned blob with safe fallback on mismatch/corruption.
+  - Prototype: localStorage versioned blob with safe fallback on mismatch/corruption.
+  - MVP: offline-first event log (IndexedDB) with sync to Supabase backend.
 - i18n:
   - use apps/student-pwa/src/i18n/de-CH.json + small t() helper; no hardcoded
     strings in Student PWA UI.
@@ -46,12 +53,13 @@ small, verified increments and keeps the workspace layout intact.
 
 ## Assumptions (safest choices)
 
-- Student PWA is the MVP surface; teacher dashboard remains minimal but must build.
-- localStorage (not IndexedDB) is acceptable for MVP persistence.
+- Student PWA is the primary surface; teacher dashboard remains minimal but must build.
+- localStorage is acceptable for the prototype only.
+- MVP requires Supabase-backed sync and backend services.
 - Only de-CH strings are required; i18n keys are used everywhere in Student PWA UI.
 - Add vitest only if needed to satisfy pnpm test for pure functions.
 
-## Milestones (with required commands)
+## Prototype milestones (local-only)
 
 ### Milestone 1 — Green baseline (repo runnable)
 Goal: pnpm install/dev/build work according to README (or adjust README).
@@ -92,8 +100,15 @@ Commands:
 - pnpm build
 
 ### Milestone 7 — QA checklist + README update + final green checks
-Goal: ship-ready MVP.
+Goal: ship-ready prototype (local-only).
 Commands:
 - pnpm install
 - pnpm test
 - pnpm build
+
+## MVP follow-on (Supabase)
+
+After the prototype is stable, plan and execute:
+- Supabase schema + auth/join flows aligned to event log contracts.
+- Sync ingestion and idempotency (eventId dedupe).
+- Deployable environment + teacher/student onboarding.

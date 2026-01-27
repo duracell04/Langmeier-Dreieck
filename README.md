@@ -242,6 +242,17 @@ See `/services/api/src/middleware/` and `/docs/lti.md`.
 
 ---
 
+## Project stages (clarity)
+
+This repo is intentionally staged. The **current repo state is Prototype**.
+
+- **Prototype (current):** minimal frontend, local-only backend/persistence. No deployed backend; focus on the core practice loop and event logging.
+- **MVP (next):** deployable release with nicer UX/UI and a **Supabase-backed backend**. Real teachers and students start using it; offline-first sync goes to Supabase.
+- **Improvement stage:** collect feedback, then iterate on pedagogy, performance, and UX.
+- **Monetization stage:** donors, subscriptions, and/or one-time payments to cover running costs and ongoing development (after MVP traction).
+
+---
+
 ## Roadmap status (transparent)
 
 | Component | Status | Notes |
