@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient";
+import { getSupabaseClient } from "./supabaseClient";
 import {
   getClassId,
   getDeviceId,
@@ -118,6 +118,7 @@ export async function joinClass(joinCode: string, identityMarker?: string | null
     return { ...result, joinCode: normalized, classConfig };
   }
 
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase.functions.invoke("join_class", {
     body: {
       joinCode: normalized,

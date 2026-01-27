@@ -7,6 +7,28 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (() => {
+        const root = document.getElementById("root");
+        if (!root) return;
+        root.innerHTML =
+          '<div style="font-family: system-ui, sans-serif; padding: 16px;">Lade Anwendung...</div>';
+        const show = (message) => {
+          root.innerHTML =
+            '<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \\"Liberation Mono\\", \\"Courier New\\", monospace; white-space: pre-wrap; padding: 16px;">' +
+            message +
+            "</pre>";
+        };
+        window.addEventListener("error", (event) => {
+          const msg = event?.error?.message || event?.message || "Unbekannter Fehler";
+          show(`Fehler beim Laden: ${msg}`);
+        });
+        window.addEventListener("unhandledrejection", (event) => {
+          const msg = event?.reason?.message || String(event?.reason ?? "Unbekannter Fehler");
+          show(`Fehler beim Laden: ${msg}`);
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
