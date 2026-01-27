@@ -48,6 +48,9 @@ export async function recordEvent(event: StudentEvent): Promise<void> {
 
 export async function syncPendingEvents(config: SyncConfig, context: EventContext) {
   if (!context.classId) return { accepted: 0, deduped: 0, serverTs: Date.now() };
+  if (context.classId === "demo-class" || context.studentRef.startsWith("demo-")) {
+    return { accepted: 0, deduped: 0, serverTs: Date.now() };
+  }
   if (!config.supabaseUrl || !config.supabaseAnonKey) return { accepted: 0, deduped: 0, serverTs: Date.now() };
 
   const lastAckTs = await getLastAckTs();

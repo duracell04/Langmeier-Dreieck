@@ -252,6 +252,51 @@ export function Practice() {
     };
   }, [scheduleSync, sessionManager]);
 
+  const nextTask = React.useCallback(
+    (nextIndex: number) => {
+      const recentSources = recentSourcesRef.current;
+      let selected: EngineTask | undefined;
+      let source: TaskSource = "new";
+
+      if (shouldUseRequeue(recentSources, REQUEUE_POLICY.density)) {
+        const pick = pickDueRequeue(requeueRef.current, nextIndex, recentTasksRef.current, REQUEUE_POLICY);
+        requeueRef.current = pick.queue;
+        if (pick.task) {
+          selected = pick.task;
+          source = "requeue";
+        }
+      }
+
+      if (!selected) {
+        if (MODE === "learn" && learnPlan.length > 0) {
+          const planIndex = nextIndex % learnPlan.length;
+          selected = taskFromBlueprint(families, learnPlan[planIndex], rng);
+        } else {
+          selected = pickNextTask(families, masteryRef.current, {
+            rng,
+            recentFamilyIds: recentFamiliesRef.current,
+            recentTasks: recentTasksRef.current,
+            recentFamilyWindow: 3,
+            swapSpacing: REQUEUE_POLICY.swapSpacing,
+            operation: "mix",
+            missing: "mix",
+            divisionMeaning: "mix",
+            swap: "mix",
+            squareMode: SQUARE_MODE,
+            divisionEnabled: true,
+          });
+        }
+      }
+
+      recentFamiliesRef.current = [...recentFamiliesRef.current, selected.familyId].slice(-3);
+      recentTasksRef.current = [...recentTasksRef.current, selected].slice(-3);
+      recentSourcesRef.current = [...recentSourcesRef.current, source].slice(-REQUEUE_POLICY.density.windowSize);
+
+      return selected;
+    },
+    [families, learnPlan, rng]
+  );
+
   React.useEffect(() => {
     if (!sessionReady || task) return;
     const next = nextTask(0);
@@ -308,51 +353,6 @@ export function Practice() {
       sessionManager.endSession(sessionId);
     };
   }, [scheduleSync, sessionId, sessionManager]);
-
-  const nextTask = React.useCallback(
-    (nextIndex: number) => {
-      const recentSources = recentSourcesRef.current;
-      let selected: EngineTask | undefined;
-      let source: TaskSource = "new";
-
-      if (shouldUseRequeue(recentSources, REQUEUE_POLICY.density)) {
-        const pick = pickDueRequeue(requeueRef.current, nextIndex, recentTasksRef.current, REQUEUE_POLICY);
-        requeueRef.current = pick.queue;
-        if (pick.task) {
-          selected = pick.task;
-          source = "requeue";
-        }
-      }
-
-      if (!selected) {
-        if (MODE === "learn" && learnPlan.length > 0) {
-          const planIndex = nextIndex % learnPlan.length;
-          selected = taskFromBlueprint(families, learnPlan[planIndex], rng);
-        } else {
-          selected = pickNextTask(families, masteryRef.current, {
-            rng,
-            recentFamilyIds: recentFamiliesRef.current,
-            recentTasks: recentTasksRef.current,
-            recentFamilyWindow: 3,
-            swapSpacing: REQUEUE_POLICY.swapSpacing,
-            operation: "mix",
-            missing: "mix",
-            divisionMeaning: "mix",
-            swap: "mix",
-            squareMode: SQUARE_MODE,
-            divisionEnabled: true,
-          });
-        }
-      }
-
-      recentFamiliesRef.current = [...recentFamiliesRef.current, selected.familyId].slice(-3);
-      recentTasksRef.current = [...recentTasksRef.current, selected].slice(-3);
-      recentSourcesRef.current = [...recentSourcesRef.current, source].slice(-REQUEUE_POLICY.density.windowSize);
-
-      return selected;
-    },
-    [families, learnPlan, rng]
-  );
 
   const resetForNext = React.useCallback(() => {
     clearTimers();
