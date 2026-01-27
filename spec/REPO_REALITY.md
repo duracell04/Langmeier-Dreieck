@@ -2,33 +2,112 @@
 
 Date: 2026-01-26
 
-This file summarizes the current repo structure and how the README expects the repo to run.
-If this document conflicts with spec files, the spec files win.
+This file summarizes the repo as observed before coding. If this document
+conflicts with spec files, the spec files win.
 
-## High-level structure
+## High-level structure (workspace)
 
 - apps/
   - student-pwa (Vite + React)
   - teacher-dashboard (Vite + React)
 - packages/
-  - core-engine (pure pedagogy, mastery, picker)
-  - storage (IndexedDB, event log, sync client)
-  - types (domain + events)
-  - validation (Zod schemas)
-  - ui-kit (shared UI)
+  - core-engine (pedagogy, task generation, gamification)
+  - ui-kit (shared UI primitives)
   - theme (tokens)
+  - types (domain + events types)
+  - validation (Zod runtime schemas)
+  - storage (event log + validators, stubs)
   - analytics-client (placeholder)
 - services/
   - api (placeholder backend)
   - payments (placeholder)
   - lti (docs placeholder)
-- docs/ (architecture and local dev docs exist)
+- docs/ (overview docs)
 - spec/ (contracts; some files empty placeholders)
-- tests/ (Playwright + perf budgets present but not wired to a runner)
+- tests/ (Playwright + axe + perf budgets, not wired)
 - curriculum/ (packs + schema)
 - schema/ (README)
+- scripts/ (check-no-hex)
 
-## How README expects you to run the repo
+## Top-level tree (depth 3)
+
+- apps/
+  - student-pwa/
+    - src/
+    - dist/
+    - package.json
+    - vite.config.mts
+    - tailwind.config.cjs
+    - tsconfig.json
+    - AGENTS.md
+    - index.html
+  - teacher-dashboard/
+    - src/
+    - dist/
+    - package.json
+    - vite.config.mts
+    - tailwind.config.cjs
+    - tsconfig.json
+    - index.html
+- packages/
+  - core-engine/
+    - src/engine
+    - src/session
+    - tests/
+    - package.json
+    - tsconfig.json
+  - ui-kit/
+    - src/shared
+    - src/student
+    - src/teacher
+    - src/utils
+    - package.json
+  - theme/
+    - tokens.css
+    - package.json
+  - types/
+    - src/domain
+    - src/events
+    - package.json
+    - tsconfig.json (empty)
+  - validation/
+    - src/schemas
+    - package.json
+    - tsconfig.json (empty)
+  - storage/
+    - src/events
+    - src/local
+    - src/remote
+    - package.json
+    - tsconfig.json (empty)
+  - analytics-client/
+    - src
+    - package.json
+- services/
+  - api/
+    - src/
+    - package.json
+    - tsconfig.json
+  - payments/
+    - src/
+    - package.json
+  - lti/
+- docs/
+- spec/
+- tests/
+  - accessibility/
+  - e2e/
+  - performance/
+- curriculum/
+  - packs/
+  - schema/
+  - tools/
+- schema/
+- scripts/
+- root files: package.json, pnpm-workspace.yaml, tailwind.preset.cjs,
+  tsconfig.base.json (empty), turbo.json (empty)
+
+## README + docs run expectations
 
 From README + docs/local-development.md:
 
@@ -47,8 +126,22 @@ From README + docs/local-development.md:
   - pnpm lint
 
 Root package.json implements:
-  - dev -> pnpm --filter @triangle/student-pwa dev
-  - build/test/lint -> pnpm -r --if-present build/test/lint
+- dev -> pnpm --filter @triangle/student-pwa dev
+- build/test/lint -> pnpm -r --if-present build/test/lint
+
+## Existing config files
+
+- Vite:
+  - apps/student-pwa/vite.config.mts (React + @tailwindcss/vite; alias to core-engine src)
+  - apps/teacher-dashboard/vite.config.mts (React + @tailwindcss/vite)
+- Tailwind:
+  - tailwind.preset.cjs (token-mapped utilities)
+  - apps/*/tailwind.config.cjs (preset + content globs)
+- TypeScript:
+  - apps/*/tsconfig.json (strict, noEmit)
+  - packages/core-engine/tsconfig.json (strict, noEmit)
+  - packages/types|validation|storage/tsconfig.json (empty stubs)
+  - tsconfig.base.json (empty stub)
 
 ## Observed gaps / drift
 
@@ -57,14 +150,15 @@ Root package.json implements:
 - spec/offline-sync.md is empty (docs/offline-sync.md exists).
 - spec/privacy-posture.md is empty (docs/privacy-posture.md exists).
 - spec/lti.md is empty (docs/lti.md exists).
-- tests/ exists (Playwright + axe + perf budgets), but there is no root test runner config in package.json that wires these files (no Playwright config found yet).
-- packages/storage/src/events/types.ts is empty.
-- README contains non-ASCII characters that appear mis-encoded in this environment. This is cosmetic, not functional.
+- packages/types and several packages have build scripts that only echo.
+- packages/storage/src/events/types.ts and migrations.ts are empty stubs.
+- tests/ exists (Playwright + axe + perf budgets), but no root test runner config.
+- Student PWA uses hash-based routing and hardcoded strings; i18n JSON exists but is not wired.
+- README shows mis-encoded characters in this environment (cosmetic).
+- node_modules folders are present in repo (already installed).
 
-## Decision: single app vs workspace
+## Fix strategy
 
-Keep the existing PNPM workspace and implement MVP inside:
-- apps/student-pwa (UI + orchestration)
-- packages/core-engine (task generation + gamification)
-- packages/types + packages/storage (contracts + validators)
-
+- Keep the PNPM workspace and build MVP in apps/student-pwa + packages/core-engine/ui-kit/theme/types.
+- Minimal repair to scripts/configs to make pnpm install/dev/build/test green.
+- Only add dependencies if required for unit tests (likely vitest).

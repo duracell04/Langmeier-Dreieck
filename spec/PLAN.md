@@ -2,96 +2,98 @@
 
 Date: 2026-01-26
 
-This plan follows the repo contracts and README workflow. It favors small, verified increments.
+This plan follows repo contracts and the user milestone list. It favors
+small, verified increments and keeps the workspace layout intact.
 
-## Approach
+## Architecture summary
 
-- Keep the current PNPM workspace layout.
-- Use existing packages: types, core-engine, ui-kit, storage.
-- Student PWA is the MVP surface; teacher dashboard stays minimal.
-- No router: screen state only.
-- Tailwind via @tailwindcss/vite only.
-- No new major dependencies unless required by tests.
+- Screens (no router): setup | practice | results.
+- App state via React Context + useReducer with slices:
+  - settings: mode (learn/test), product sets, speed (600-800ms), aids toggles.
+  - session: sessionId, rngSeed, phase, attemptsBeforeEnd, input, queue, taskShownAt.
+  - progress/events: TaskEndEvent list and derived session summary.
+- Domain modules:
+  - packages/core-engine: product sets + families, seeded RNG, task generation,
+    learn/test queues, requeue spacing, computeGamification(events).
+  - packages/types: canonical event and domain types.
+  - packages/ui-kit: base primitives + practice UI pieces.
+- Persistence:
+  - localStorage versioned blob with safe fallback on mismatch/corruption.
+- i18n:
+  - use apps/student-pwa/src/i18n/de-CH.json + small t() helper; no hardcoded
+    strings in Student PWA UI.
+- Timing constants (single source):
+  - SUCCESS_DWELL_MS = 700
+  - REVEAL_DWELL_MS = 1600
 
-## Assumptions
+## Planned file tree (add/update)
 
-- The student PWA is the primary MVP target.
-- Specs in spec/ override docs/ if inconsistent.
-- Tests are acceptable to add in packages/core-engine (pure functions) with Vitest.
-- Empty spec files should be filled later; docs/ content can be used as a base.
+- apps/student-pwa/src/App.tsx (screen enum switch)
+- apps/student-pwa/src/screens/Setup.tsx
+- apps/student-pwa/src/screens/Practice.tsx
+- apps/student-pwa/src/screens/Results.tsx
+- apps/student-pwa/src/state/ (context, reducers, actions, selectors)
+- apps/student-pwa/src/state/persistence.ts
+- apps/student-pwa/src/i18n/ (update keys + t() helper)
+- apps/student-pwa/src/theme/tokens.css (design system tokens)
+- apps/student-pwa/src/styles/app.css (import local tokens + tailwind)
+- packages/core-engine/src/engine/ (families, queue, RNG, gamification updates)
+- packages/core-engine/tests/ (vitest unit tests)
+- packages/ui-kit/src/shared/ (Toggle, Chip, Divider; adjust Button/Card if needed)
+- spec/DESIGN_SYSTEM.md
+- spec/UI_QA.md
+- spec/MILESTONE_<n>_REPORT.md per milestone
 
-## Current state (already in repo)
+## Assumptions (safest choices)
 
-- TaskEndEvent contract added to types + validator + spec/events-schema.md.
-- computeGamification and variantId implemented in packages/core-engine.
-- SessionStreak, MasteryDots, BadgeStamp components added to ui-kit.
+- Student PWA is the MVP surface; teacher dashboard remains minimal but must build.
+- localStorage (not IndexedDB) is acceptable for MVP persistence.
+- Only de-CH strings are required; i18n keys are used everywhere in Student PWA UI.
+- Add vitest only if needed to satisfy pnpm test for pure functions.
 
-## Milestones
+## Milestones (with required commands)
 
-### Milestone 1 - Repo green baseline
-Goal: clean install/build/run according to README.
-
+### Milestone 1 — Green baseline (repo runnable)
+Goal: pnpm install/dev/build work according to README (or adjust README).
 Commands:
-- corepack enable
 - pnpm install
 - pnpm dev
-- pnpm --filter @triangle/teacher-dashboard dev
 - pnpm build
+
+### Milestone 2 — Design system + base components
+Goal: tokens + base components exist and are used.
+Commands:
+- pnpm dev
+- pnpm build
+
+### Milestone 3 — Domain + task generator + unit tests
+Goal: product-centric engine works and is tested.
+Commands:
 - pnpm test
+- pnpm build
 
-Notes:
-- If tests are not wired, add minimal vitest config under packages/core-engine and update scripts.
+### Milestone 4 — App state + persistence
+Goal: context/reducer slices + localStorage versioning.
+Commands:
+- pnpm test
+- pnpm build
 
-### Milestone 2 - Domain + task engine audit
-Goal: verify product sets, learn/test queues, swap spacing, requeue rule.
+### Milestone 5 — Practice UI + exact phase machine + tests
+Goal: one-screen loop works exactly; no layout shift.
+Commands:
+- pnpm dev
+- pnpm test
+- pnpm build
 
-Work:
-- Align product sets to spec list.
-- Ensure learn queue is deterministic with swap adjacent.
-- Ensure test queue uses seed and enforces swap spacing.
-- Requeue after reveal with minSpacing=6.
+### Milestone 6 — Results + computeGamification + subtle UI
+Goal: deterministic results from TaskEndEvent log.
+Commands:
+- pnpm test
+- pnpm build
 
-Verify:
-- Add vitest unit tests for generator determinism and spacing.
-
-### Milestone 3 - State + persistence
-Goal: Context + reducer + localStorage versioned persistence.
-
-Work:
-- Settings + progress persistence.
-- Session state includes phase enum and timings.
-
-Verify:
-- Manual refresh keeps settings/progress.
-
-### Milestone 4 - Practice UI + phase machine
-Goal: exact ladder behavior with phase-driven UI invariants.
-
-Work:
-- Implement phase transitions: solve, wrong1, structure, success, reveal.
-- Ensure gridVisible and keypadDisabled derived from phase only.
-- Ensure auto-advance timings: success 700ms, reveal 1600ms.
-
-Verify:
-- Manual run and pure reducer tests.
-
-### Milestone 5 - Results + gamification
-Goal: event emission + results screen with streak and badges.
-
-Work:
-- Emit TaskEndEvent only at task end.
-- Render SessionStreak, MasteryDots, BadgeStamp (cap 2).
-- Use computeGamification for results.
-
-Verify:
-- Unit tests for computeGamification.
-- pnpm build and pnpm test.
-
-### Milestone 6 - Docs + polish
-Goal: align docs and specs with implementation.
-
-Work:
-- Update README run instructions if needed.
-- Fill empty spec files or link to docs equivalents.
-- Add spec/MILESTONE_n_REPORT.md after each milestone.
-
+### Milestone 7 — QA checklist + README update + final green checks
+Goal: ship-ready MVP.
+Commands:
+- pnpm install
+- pnpm test
+- pnpm build
