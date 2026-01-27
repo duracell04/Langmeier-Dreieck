@@ -37,10 +37,26 @@ async function ensureDeviceId(): Promise<string> {
 
 export async function joinClass(joinCode: string, identityToken?: string | null): Promise<JoinClassResult> {
   const deviceId = await ensureDeviceId();
+  const trimmed = joinCode.trim();
+
+  if (import.meta.env.DEV && (trimmed.toUpperCase() === "DEMO" || trimmed.toUpperCase() === "DEMO12")) {
+    const demoRef = `demo-${crypto.randomUUID()}`;
+    const result = {
+      classId: "demo-class",
+      studentRef: demoRef,
+      studentNumber: 1,
+    };
+    await Promise.all([
+      setClassId(result.classId),
+      setStudentRef(result.studentRef),
+      setStudentNumber(result.studentNumber),
+    ]);
+    return result;
+  }
 
   const { data, error } = await supabase.functions.invoke("join_class", {
     body: {
-      joinCode,
+      joinCode: trimmed,
       deviceId,
       identityToken: identityToken ?? undefined,
     },
