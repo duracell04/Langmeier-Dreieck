@@ -14,6 +14,9 @@ export interface SyncConfig {
   supabaseAnonKey: string;
 }
 
+const SYNC_BATCH_SIZE = 120;
+const SYNC_OVERLAP_MS = 5 * 60 * 1000;
+
 export function createBaseEvent(context: EventContext, type: StudentEvent["type"]): BaseEvent {
   const ts = Date.now();
   return {
@@ -39,18 +42,29 @@ export async function syncPendingEvents(config: SyncConfig, context: EventContex
   if (!config.supabaseUrl || !config.supabaseAnonKey) return { accepted: 0, deduped: 0, serverTs: Date.now() };
 
   const lastAckTs = await getLastAckTs();
-  const events = await queryEvents({ studentRef: context.studentRef, sinceTs: lastAckTs ?? 0 });
+  const sinceTs = Math.max(0, (lastAckTs ?? 0) - SYNC_OVERLAP_MS);
+  const events = await queryEvents({ studentRef: context.studentRef, sinceTs });
 
   if (events.length === 0) return { accepted: 0, deduped: 0, serverTs: Date.now() };
 
-  const result = await submitEvents(config, {
-    classId: context.classId,
-    studentRef: context.studentRef,
-    events,
-  });
+  let accepted = 0;
+  let deduped = 0;
+  let serverTs = lastAckTs ?? Date.now();
 
-  const maxTs = events.reduce((acc, event) => Math.max(acc, event.ts), lastAckTs ?? 0);
-  await setLastAckTs(maxTs);
+  for (let i = 0; i < events.length; i += SYNC_BATCH_SIZE) {
+    const batch = events.slice(i, i + SYNC_BATCH_SIZE);
+    const result = await submitEvents(config, {
+      classId: context.classId,
+      studentRef: context.studentRef,
+      events: batch,
+      cursorTs: lastAckTs ?? undefined,
+    });
 
-  return result;
+    accepted += result.accepted;
+    deduped += result.deduped;
+    serverTs = Math.max(serverTs, result.serverTs);
+  }
+
+  await setLastAckTs(serverTs);
+  return { accepted, deduped, serverTs };
 }

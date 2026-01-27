@@ -4,6 +4,7 @@ export interface SubmitEventsPayload {
   classId: string;
   studentRef: string;
   events: StudentEvent[];
+  cursorTs?: number;
 }
 
 export interface SubmitEventsResult {
