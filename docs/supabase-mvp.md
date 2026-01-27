@@ -3,6 +3,18 @@
 This repo uses Supabase for the MVP backend. There is no separate API server.
 All student event writes must go through edge functions.
 
+## Schema notes (MVP defaults)
+
+The `classes` table includes default settings required by the student app:
+- `pack_id`
+- `default_mode` (`learn` | `test`)
+- `product_sets` (text array: `products_3_4`, `products_2`, `squares`, `cardinals`, `all_products`)
+- `session_length` (10 | 25 | 40)
+- `division_enabled` (boolean)
+- `square_mode` (`default` | `single`)
+
+These are added in `supabase/migrations/20260127133000_class_defaults.sql`.
+
 ## Required env vars (frontend)
 
 Create local env files from the examples:
@@ -35,6 +47,15 @@ supabase secrets set SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
 supabase functions deploy join_class
 supabase functions deploy submit_events
 ```
+
+## Edge function validation
+
+Edge functions share Zod validation in `supabase/functions/_shared/validation.ts`.
+If you change event shapes or class defaults, update:
+- `supabase/functions/_shared/validation.ts`
+- `packages/types` (compile-time)
+- `packages/storage/src/events/validator.ts` (runtime)
+- `spec/events-schema.md` (human contract)
 
 ## Hosted Supabase
 

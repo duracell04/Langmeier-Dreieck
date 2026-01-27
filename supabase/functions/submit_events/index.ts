@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SubmitEventsRequestSchema } from "../_shared/validation.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -112,25 +113,21 @@ serve(async req => {
     return jsonResponse(405, { error: "method_not_allowed" });
   }
 
-  let payload: any;
+  let payload: unknown;
   try {
     payload = await req.json();
   } catch {
     return jsonResponse(400, { error: "invalid_json" });
   }
 
-  const classId = typeof payload?.classId === "string" ? payload.classId : "";
-  const studentRef = typeof payload?.studentRef === "string" ? payload.studentRef : "";
-  const events = Array.isArray(payload?.events) ? payload.events : [];
-
-  if (!classId || !studentRef || events.length === 0) {
+  const parsed = SubmitEventsRequestSchema.safeParse(payload);
+  if (!parsed.success) {
     return jsonResponse(400, { error: "invalid_payload" });
   }
 
-  for (const event of events) {
-    if (!event || typeof event !== "object") {
-      return jsonResponse(400, { error: "invalid_event" });
-    }
+  const { classId, studentRef, events } = parsed.data;
+
+  for (const event of events as Record<string, unknown>[]) {
     if (!hasRequiredBase(event)) {
       return jsonResponse(400, { error: "invalid_event_shape" });
     }

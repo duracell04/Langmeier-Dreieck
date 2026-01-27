@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { JoinClassRequestSchema } from "../_shared/validation.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -20,6 +21,26 @@ function jsonResponse(status: number, body: Record<string, unknown>) {
   });
 }
 
+function normalizeJoinCode(code: string): string {
+  return code.trim().toUpperCase();
+}
+
+function classConfigFromRow(row: Record<string, unknown>) {
+  const productSets = Array.isArray(row.product_sets) ? row.product_sets.filter(item => typeof item === "string") : [];
+  const sessionLength = row.session_length === 10 || row.session_length === 25 || row.session_length === 40
+    ? row.session_length
+    : 25;
+
+  return {
+    packId: typeof row.pack_id === "string" ? row.pack_id : "core",
+    defaultMode: row.default_mode === "test" ? "test" : "learn",
+    productSets: productSets.length ? productSets : ["products_3_4"],
+    sessionLength,
+    divisionEnabled: row.division_enabled !== false,
+    squareMode: row.square_mode === "single" ? "single" : "default",
+  };
+}
+
 serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -29,23 +50,24 @@ serve(async req => {
     return jsonResponse(405, { error: "method_not_allowed" });
   }
 
-  let payload: any;
+  let payload: unknown;
   try {
     payload = await req.json();
   } catch {
     return jsonResponse(400, { error: "invalid_json" });
   }
 
-  const joinCode = typeof payload?.joinCode === "string" ? payload.joinCode.trim() : "";
-  const deviceId = typeof payload?.deviceId === "string" ? payload.deviceId.trim() : "";
-
-  if (!joinCode) {
-    return jsonResponse(400, { error: "join_code_required" });
+  const parsed = JoinClassRequestSchema.safeParse(payload);
+  if (!parsed.success) {
+    return jsonResponse(400, { error: "invalid_payload" });
   }
+
+  const joinCode = normalizeJoinCode(parsed.data.joinCode);
+  const deviceId = parsed.data.deviceId?.trim() ?? "";
 
   const { data: classRow, error: classError } = await supabase
     .from("classes")
-    .select("id")
+    .select("id, pack_id, default_mode, product_sets, session_length, division_enabled, square_mode")
     .eq("join_code", joinCode)
     .maybeSingle();
 
@@ -58,6 +80,7 @@ serve(async req => {
   }
 
   const classId = classRow.id as string;
+  const classConfig = classConfigFromRow(classRow as Record<string, unknown>);
 
   if (deviceId) {
     const { data: existing, error: existingError } = await supabase
@@ -76,6 +99,7 @@ serve(async req => {
         classId,
         studentRef: existing.student_ref,
         studentNumber: existing.student_number,
+        classConfig,
       });
     }
   }
@@ -110,5 +134,6 @@ serve(async req => {
     classId,
     studentRef,
     studentNumber: nextNumber,
+    classConfig,
   });
 });
