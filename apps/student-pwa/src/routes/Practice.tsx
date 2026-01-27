@@ -1,5 +1,7 @@
 import React from "react";
 import {
+  Badge,
+  Button,
   FeedbackLadder,
   Keypad,
   PracticeFrame,
@@ -119,6 +121,7 @@ export function Practice() {
   const [structureUsed, setStructureUsed] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
   const [elapsedMs, setElapsedMs] = React.useState(0);
+  const [syncStatus, setSyncStatus] = React.useState<"idle" | "syncing" | "error" | "ok">("idle");
 
   const timers = React.useRef<number[]>([]);
   const syncTimer = React.useRef<number | null>(null);
@@ -145,19 +148,30 @@ export function Practice() {
     timers.current.push(id);
   };
 
+  const runSync = React.useCallback(async () => {
+    if (!eventContextRef.current) return;
+    if (!navigator.onLine) return;
+    setSyncStatus("syncing");
+    try {
+      await syncPendingEvents(syncConfig, eventContextRef.current);
+      setSyncStatus("ok");
+    } catch {
+      setSyncStatus("error");
+    }
+  }, [syncConfig]);
+
   const scheduleSync = React.useCallback(() => {
     if (syncTimer.current) return;
-    syncTimer.current = window.setTimeout(async () => {
+    syncTimer.current = window.setTimeout(() => {
       syncTimer.current = null;
-      if (!eventContextRef.current) return;
-      if (!navigator.onLine) return;
-      try {
-        await syncPendingEvents(syncConfig, eventContextRef.current);
-      } catch {
-        // keep working offline
-      }
+      runSync();
     }, 300);
-  }, [syncConfig]);
+  }, [runSync]);
+
+  const handleSync = React.useCallback(() => {
+    if (!navigator.onLine) return;
+    runSync();
+  }, [runSync]);
 
   React.useEffect(() => {
     const handleStatus = () => setIsOnline(navigator.onLine);
@@ -169,6 +183,12 @@ export function Practice() {
       clearTimers();
     };
   }, [clearTimers]);
+
+  React.useEffect(() => {
+    if (!isOnline) {
+      setSyncStatus("idle");
+    }
+  }, [isOnline]);
 
   React.useEffect(() => {
     let active = true;
@@ -633,7 +653,22 @@ export function Practice() {
             {progress}/{SESSION_TOTAL}
           </div>
           {MODE === "test" ? <div className="text-sm text-muted">{elapsedLabel}</div> : null}
-          <div className="text-sm text-muted">{isOnline ? "" : "Offline"}</div>
+          <div className="flex items-center gap-2">
+            {!isOnline ? (
+              <Badge>Offline</Badge>
+            ) : syncStatus === "syncing" ? (
+              <Badge>Synchronisieren...</Badge>
+            ) : syncStatus === "error" ? (
+              <>
+                <Badge>Sync Fehler</Badge>
+                <Button variant="ghost" size="sm" onClick={handleSync}>
+                  Erneut
+                </Button>
+              </>
+            ) : (
+              <Badge>Verbunden</Badge>
+            )}
+          </div>
         </>
       }
       footer={

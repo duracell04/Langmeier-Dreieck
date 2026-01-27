@@ -42,14 +42,15 @@ export function StructureLensGrid({
   const label =
     ariaLabel ??
     (mode === "rect"
-      ? `Structure grid: ${r} by ${c}.`
-      : `Structure grid: ${Math.min(100, Math.max(0, count ?? 0))} cells.`);
+      ? `Strukturfeld: ${r} mal ${c}.`
+      : `Strukturfeld: ${Math.min(100, Math.max(0, count ?? 0))} Felder.`);
 
   return (
     <div
       className={cn(
         "inline-flex rounded-swiss border border-grid-border bg-grid-bg p-1",
         "transition-opacity duration-fast ease-swiss",
+        "motion-reduce:transition-none",
         visible ? "opacity-100" : "opacity-0 pointer-events-none",
         className
       )}
