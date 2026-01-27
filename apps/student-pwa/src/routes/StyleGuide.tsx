@@ -1,87 +1,161 @@
-import React from "react";
+﻿import React from "react";
 import {
-  Card,
-  FeedbackLadder,
-  Keypad,
-  StructureLensGrid,
-  TriangleDisplay,
   Button,
+  Card,
+  Container,
+  FeedbackLadder,
+  Footer,
+  Keypad,
+  Navbar,
+  Section,
+  SectionHeading,
+  StructureLensGrid,
+  TextInput,
+  TriangleDisplay,
 } from "@triangle/ui-kit";
 
 const SWATCHES = [
   { label: "bg", className: "bg-bg" },
-  { label: "surface", className: "bg-surface" },
-  { label: "grid-bg", className: "bg-grid-bg" },
-  { label: "grid-fill", className: "bg-grid-fill" },
-  { label: "grid-border", className: "bg-grid-border" },
-  { label: "focus", className: "bg-focus" },
-  { label: "status-success", className: "bg-status-success" },
-  { label: "status-warning", className: "bg-status-warning" },
-  { label: "status-error", className: "bg-status-error" },
+  { label: "card", className: "bg-card" },
+  { label: "primary", className: "bg-primary" },
+  { label: "secondary", className: "bg-secondary" },
+  { label: "accent", className: "bg-accent" },
+  { label: "border", className: "bg-border" },
 ];
 
 export function StyleGuide() {
   return (
-    <main className="min-h-screen bg-bg text-ink font-sans">
-      <div className="mx-auto grid w-full max-w-5xl gap-8 px-6 py-10">
-        <header className="grid gap-2">
-          <p className="text-micro uppercase tracking-wide text-muted">Style Guide</p>
-          <h1 className="text-3xl font-semibold text-ink">Student PWA</h1>
-          <Button variant="ghost" size="sm" onClick={() => (window.location.hash = "#/")}>
-            Zurück
-          </Button>
-        </header>
+    <div className="min-h-screen bg-bg text-foreground font-sans">
+      <Navbar
+        brand="Styleguide"
+        links={[
+          { label: "Typografie", href: "#typografie" },
+          { label: "Buttons", href: "#buttons" },
+          { label: "Layout", href: "#layout" },
+          { label: "Student", href: "#student-instrument" },
+        ]}
+        ctaLabel="Zurueck"
+        onCtaClick={() => {
+          window.location.hash = "#/join";
+        }}
+      />
 
-        <Card className="grid gap-4">
-          <h2 className="text-lg font-semibold text-ink">Tokens</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {SWATCHES.map(swatch => (
-              <div key={swatch.label} className="grid gap-2 text-sm text-muted">
-                <div className={`h-12 rounded-swiss border border-grid-border ${swatch.className}`} />
-                {swatch.label}
+      <main className="flex-1">
+        <Section id="typografie">
+          <Container size="wide">
+            <SectionHeading title="Typografie" subtitle="Skalierung fuer Titel, Text und Hilfetexte." align="left" />
+            <div className="mt-8 grid gap-4">
+              <h1>Display Headline</h1>
+              <h2>Zweiter Titel</h2>
+              <h3>Dritter Titel</h3>
+              <h4>Vierter Titel</h4>
+              <p className="text-base text-muted-foreground">
+                Fliesstext mit ruhiger Zeilenhoehe fuer gute Lesbarkeit auf Tablets.
+              </p>
+              <p className="text-sm text-muted-foreground">Sekundaerer Text fuer Hinweise.</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Microcopy</p>
+            </div>
+          </Container>
+        </Section>
+
+        <Section id="buttons" tone="subtle">
+          <Container size="wide">
+            <SectionHeading title="Buttons" subtitle="Primaer, sekundaer, outline und hero Varianten." align="left" />
+            <div className="mt-8 grid gap-6">
+              <div className="flex flex-wrap gap-3">
+                <Button>Primary</Button>
+                <Button variant="secondary">Secondary</Button>
+                <Button variant="outline">Outline</Button>
+                <Button variant="ghost">Ghost</Button>
+                <Button variant="link">Link</Button>
               </div>
-            ))}
-          </div>
-        </Card>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="hero" size="xl">Hero</Button>
+                <Button variant="hero-outline" size="xl">Hero Outline</Button>
+                <Button disabled>Disabled</Button>
+              </div>
+            </div>
+          </Container>
+        </Section>
 
-        <Card className="grid gap-4">
-          <h2 className="text-lg font-semibold text-ink">Typografie</h2>
-          <div className="grid gap-2">
-            <div className="text-product font-semibold text-ink">24</div>
-            <div className="text-factor font-semibold text-ink-2">6</div>
-            <div className="text-operator font-semibold text-muted">×</div>
-            <div className="text-micro text-muted">Micro Copy</div>
-          </div>
-        </Card>
+        <Section id="layout">
+          <Container size="wide">
+            <SectionHeading title="Layout und Komponenten" subtitle="Cards, Inputs und Container-Rhythmus." align="left" />
+            <div className="mt-8 grid gap-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {SWATCHES.map(swatch => (
+                  <div key={swatch.label} className="grid gap-2 text-sm text-muted-foreground">
+                    <div className={`h-12 rounded-lg border border-border/50 ${swatch.className}`} />
+                    {swatch.label}
+                  </div>
+                ))}
+              </div>
 
-        <Card className="grid gap-6">
-          <h2 className="text-lg font-semibold text-ink">TriangleDisplay</h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            <TriangleDisplay product={24} factorA={6} factorB={4} missingSlot="product" status="idle" />
-            <TriangleDisplay product={24} factorA={6} factorB={4} missingSlot="product" status="success" />
-            <TriangleDisplay product={24} factorA={6} factorB={4} missingSlot="factorA" status="hint" lockedSlots={["factorB"]} operation="div" />
-          </div>
-        </Card>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Card className="p-6">Default Card</Card>
+                <Card elevated className="p-6">Elevated Card</Card>
+                <Card raised className="p-6">Raised Card</Card>
+              </div>
 
-        <Card className="grid gap-6">
-          <h2 className="text-lg font-semibold text-ink">Feedback Ladder</h2>
-          <div className="grid gap-3">
-            <FeedbackLadder state="try_again" message="Nochmal versuchen" />
-            <FeedbackLadder state="structure" message="Schauen wir auf die Struktur" />
-            <FeedbackLadder state="show_answer" message="Antwort: 24" detail="Aufgabe kommt wieder" />
-          </div>
-        </Card>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextInput placeholder="Text input" />
+                <TextInput placeholder="Disabled" disabled />
+              </div>
 
-        <Card className="grid gap-6">
-          <h2 className="text-lg font-semibold text-ink">Structure Lens</h2>
-          <StructureLensGrid rows={6} cols={4} visible />
-        </Card>
+              <div className="grid gap-4">
+                <div className="grid gap-3">
+                  <p className="text-sm text-muted-foreground">Spacing rhythm</p>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <Card className="p-4">Section padding</Card>
+                    <Card className="p-4">Container widths</Card>
+                    <Card className="p-4">Grid gap scale</Card>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Container>
+        </Section>
 
-        <Card className="grid gap-6">
-          <h2 className="text-lg font-semibold text-ink">Keypad</h2>
-          <Keypad onKey={() => {}} />
-        </Card>
-      </div>
-    </main>
+        <Section id="student-instrument" tone="subtle">
+          <Container size="wide">
+            <SectionHeading title="Student Instrument" subtitle="Triangle, Strukturlinse, Keypad, Feedback." align="left" />
+            <div className="mt-8 grid gap-8">
+              <div className="grid gap-6 md:grid-cols-3">
+                <TriangleDisplay product="?" factorA="6" factorB="4" missingSlot="product" status="hint" />
+                <TriangleDisplay product="24" factorA="?" factorB="4" missingSlot="factorA" status="idle" />
+                <TriangleDisplay product="24" factorA="6" factorB="?" missingSlot="factorB" status="success" operation="div" />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Card className="p-4">
+                  <StructureLensGrid rows={6} cols={4} visible showNumbers gridSize={6} />
+                </Card>
+                <Card className="p-4">
+                  <StructureLensGrid rows={8} cols={5} visible gridSize={10} />
+                </Card>
+              </div>
+
+              <div className="max-w-md">
+                <Keypad onKey={() => {}} />
+              </div>
+
+              <div className="grid gap-3 max-w-xl">
+                <FeedbackLadder state="wrong1" message="Nochmal versuchen." />
+                <FeedbackLadder state="structure" message="Schauen wir auf die Struktur." detail="Antwort wird angezeigt." />
+                <FeedbackLadder state="success" message="Richtig" />
+              </div>
+            </div>
+          </Container>
+        </Section>
+      </main>
+
+      <Footer
+        brand="Langmeier Dreieck-1x1"
+        links={[
+          { label: "Datenschutz", href: "#/datenschutz" },
+          { label: "Impressum", href: "#/impressum" },
+        ]}
+      />
+    </div>
   );
 }

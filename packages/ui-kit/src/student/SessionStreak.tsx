@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 
 export interface SessionStreakProps {
   streak: number;
@@ -16,7 +16,7 @@ export function SessionStreak({ streak, showFrom = 2, ariaLabel }: SessionStreak
   const label = ariaLabel ?? `Serie: ${streak}`;
 
   return (
-    <span className="inline-flex min-w-touch items-center justify-end text-sm text-muted" aria-label={label}>
+    <span className="inline-flex min-w-touch items-center justify-end text-xs uppercase tracking-wider text-muted-foreground" aria-label={label}>
       <span className="font-semibold">{"\u2022"} {streak}</span>
     </span>
   );

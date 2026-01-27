@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { cn } from "../utils/cn";
 
 export type GridMode = "rect" | "count";
@@ -14,11 +14,13 @@ export interface StructureLensGridProps {
   className?: string;
   ariaLabel?: string;
   outlineFilledRegion?: boolean;
+  showNumbers?: boolean;
+  gridSize?: number;
 }
 
-function clamp10(n: number): number {
+function clamp(n: number, max = 10): number {
   if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.min(10, Math.round(n)));
+  return Math.max(0, Math.min(max, Math.round(n)));
 }
 
 export function StructureLensGrid({
@@ -31,26 +33,34 @@ export function StructureLensGrid({
   className,
   ariaLabel,
   outlineFilledRegion = false,
+  showNumbers = false,
+  gridSize = 10,
 }: StructureLensGridProps) {
-  const r = clamp10(rows);
-  const c = clamp10(cols);
-
-  const cell = 10;
-  const fillWidth = c * cell;
-  const fillHeight = r * cell;
+  const size = Math.max(1, Math.min(10, Math.round(gridSize)));
+  const r = Math.min(size, clamp(rows, size));
+  const c = Math.min(size, clamp(cols, size));
+  const total = size * size;
+  const safeCount = clamp(count ?? 0, total);
 
   const label =
     ariaLabel ??
     (mode === "rect"
       ? `Strukturfeld: ${r} mal ${c}.`
-      : `Strukturfeld: ${Math.min(100, Math.max(0, count ?? 0))} Felder.`);
+      : `Strukturfeld: ${Math.min(total, Math.max(0, count ?? 0))} Felder.`);
+
+  const isActive = (row: number, col: number, index: number) =>
+    mode === "count" ? index < safeCount : row < r && col < c;
+
+  const highlightCell = (row: number, col: number) => {
+    if (highlight === "none") return false;
+    if (highlight === "rows") return row < r;
+    return col < c;
+  };
 
   return (
     <div
       className={cn(
-        "inline-flex rounded-swiss border border-grid-border bg-grid-bg p-1",
-        "transition-opacity duration-fast ease-swiss",
-        "motion-reduce:transition-none",
+        "inline-flex flex-col gap-0.5 transition-subtle",
         visible ? "opacity-100" : "opacity-0 pointer-events-none",
         className
       )}
@@ -58,54 +68,41 @@ export function StructureLensGrid({
       role="img"
       aria-label={label}
     >
-      <svg viewBox="0 0 100 100" className="w-structure-grid h-structure-grid block" aria-hidden="true">
-        <rect x="0" y="0" width="100" height="100" className="fill-grid-bg" />
+      {showNumbers ? (
+        <div className="flex gap-0.5 mb-1">
+          <div className="grid-cell" />
+          {Array.from({ length: size }, (_, i) => (
+            <div key={`header-${i + 1}`} className="grid-cell text-muted-foreground/70 font-medium">
+              {i + 1}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
-        {mode === "rect" ? (
-          <>
-            <rect x="0" y="0" width={fillWidth} height={fillHeight} className="fill-grid-fill" opacity="0.9" />
-            <rect x="0" y="0" width={fillWidth} height={fillHeight} className="fill-focus" opacity="0.08" />
-          </>
-        ) : (
-          Array.from({ length: Math.min(100, Math.max(0, count ?? 0)) }).map((_, i) => {
-            const x = (i % 10) * cell;
-            const y = Math.floor(i / 10) * cell;
-            return <rect key={i} x={x} y={y} width={cell} height={cell} className="fill-grid-fill" opacity="0.9" />;
-          })
-        )}
-
-        {outlineFilledRegion && mode === "rect" && r > 0 && c > 0 && (
-          <rect
-            x="0"
-            y="0"
-            width={fillWidth}
-            height={fillHeight}
-            fill="none"
-            className="stroke-grid-border"
-            strokeWidth="1"
-            opacity="0.6"
-          />
-        )}
-
-        {Array.from({ length: 9 }).map((_, i) => {
-          const p = (i + 1) * cell;
-          return (
-            <React.Fragment key={p}>
-              <line x1={p} y1={0} x2={p} y2={100} className="stroke-grid-border" strokeWidth="1" opacity="0.6" />
-              <line x1={0} y1={p} x2={100} y2={p} className="stroke-grid-border" strokeWidth="1" opacity="0.6" />
-            </React.Fragment>
-          );
-        })}
-
-        <rect x="0" y="0" width="100" height="100" fill="none" className="stroke-grid-border" strokeWidth="1.5" />
-
-        {highlight === "rows" && r > 0 && (
-          <line x1={0} y1={0} x2={0} y2={fillHeight} className="stroke-focus" strokeWidth="2.5" />
-        )}
-        {highlight === "cols" && c > 0 && (
-          <line x1={0} y1={0} x2={fillWidth} y2={0} className="stroke-focus" strokeWidth="2.5" />
-        )}
-      </svg>
+      {Array.from({ length: size }, (_, row) => (
+        <div key={`row-${row + 1}`} className="flex gap-0.5">
+          {showNumbers ? (
+            <div className="grid-cell text-muted-foreground/70 font-medium">{row + 1}</div>
+          ) : null}
+          {Array.from({ length: size }, (_, col) => {
+            const index = row * size + col;
+            const active = isActive(row, col, index);
+            const highlightClass = highlightCell(row, col) && active ? "ring-1 ring-primary/30" : "";
+            const outlineClass = outlineFilledRegion && active ? "ring-1 ring-primary/40" : "";
+            return (
+              <div
+                key={`cell-${row + 1}-${col + 1}`}
+                className={cn(
+                  "grid-cell",
+                  active ? "grid-cell-active" : "grid-cell-inactive",
+                  highlightClass,
+                  outlineClass
+                )}
+              />
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

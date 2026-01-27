@@ -1,5 +1,5 @@
-import React from "react";
-import { Button, Card, TextInput } from "@triangle/ui-kit";
+﻿import React from "react";
+import { Button, Card, Container, Footer, Navbar, Section, TextInput } from "@triangle/ui-kit";
 import {
   clearStoredIdentity,
   joinClass,
@@ -13,7 +13,7 @@ const MARKERS = [
   { id: "success", label: "Gruen", swatch: "bg-success" },
   { id: "warning", label: "Orange", swatch: "bg-warning" },
   { id: "info", label: "Violett", swatch: "bg-info" },
-  { id: "ink", label: "Dunkel", swatch: "bg-ink" },
+  { id: "ink", label: "Dunkel", swatch: "bg-foreground" },
 ];
 
 function readJoinCodeFromUrl(): string | null {
@@ -153,110 +153,133 @@ export function Join() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-bg text-ink font-sans">
-      <div className="mx-auto grid w-full max-w-md gap-6 px-6 py-10">
-        <header className="grid gap-2 text-center">
-          <p className="text-micro uppercase tracking-wide text-muted">Dreieck-1x1</p>
-          <div className="flex items-center justify-center gap-3">
-            <h1 className="text-3xl font-semibold text-ink">Beitreten</h1>
-            <button
-              type="button"
-              onClick={() => setShowDemoInfo(true)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-grid-border bg-surface text-sm font-semibold text-ink"
-              aria-label="Demo Hinweise anzeigen"
-            >
-              i
-            </button>
-          </div>
-          <p className="text-sm text-muted">Kein Login noetig.</p>
-        </header>
+    <div className="min-h-screen bg-bg text-foreground font-sans flex flex-col">
+      <Navbar
+        brand="Langmeier Dreieck-1x1"
+        ctaLabel="Info"
+        onCtaClick={() => {
+          window.location.hash = "#/landing";
+        }}
+      />
 
-        <Card className="grid gap-5">
-          {stored ? (
-            <div className="grid gap-2 rounded-swiss border border-grid-border bg-surface px-4 py-3 text-sm text-muted">
-              <div>Letzte Klasse ist gespeichert.</div>
-              <Button onClick={onContinue} disabled={status === "joining"}>
-                Letzte Klasse wieder beitreten
-              </Button>
-            </div>
-          ) : null}
+      <main className="flex-1">
+        <Section>
+          <Container size="narrow">
+            <div className="grid gap-8">
+              <header className="grid gap-3 text-center">
+                <p className="eyebrow">Dreieck-1x1</p>
+                <div className="flex items-center justify-center gap-3">
+                  <h1 className="text-3xl font-semibold text-foreground">Beitreten</h1>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 w-9 rounded-full p-0"
+                    onClick={() => setShowDemoInfo(true)}
+                    aria-label="Demo Hinweise anzeigen"
+                  >
+                    i
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">Kein Login noetig.</p>
+              </header>
 
-          <label className="grid gap-2 text-sm text-muted">
-            Code
-            <TextInput
-              value={code}
-              onChange={event => setCode(event.target.value.toUpperCase())}
-              placeholder="Code eingeben"
-              autoComplete="off"
-              inputMode="text"
-              maxLength={6}
-            />
-          </label>
+              <Card raised className="grid gap-6 p-6 md:p-8">
+                {stored ? (
+                  <Card className="grid gap-2 bg-background p-4">
+                    <div className="text-sm text-muted-foreground">Letzte Klasse ist gespeichert.</div>
+                    <Button onClick={onContinue} disabled={status === "joining"}>
+                      Letzte Klasse wieder beitreten
+                    </Button>
+                  </Card>
+                ) : null}
 
-          <div className="grid gap-2">
-            <div className="text-sm text-muted">Farbe waehlen (optional)</div>
-            <div className="flex flex-wrap gap-2">
-              {MARKERS.map(marker => (
-                <button
-                  key={marker.id}
-                  type="button"
-                  className={`flex items-center gap-2 rounded-swiss border px-3 py-2 text-sm ${
-                    identity === marker.id
-                      ? "border-primary bg-surface"
-                      : "border-grid-border bg-bg"
-                  }`}
-                  aria-pressed={identity === marker.id}
-                  onClick={() => setIdentity(prev => (prev === marker.id ? null : marker.id))}
+                <label className="grid gap-2 text-sm text-muted-foreground">
+                  Code
+                  <TextInput
+                    value={code}
+                    onChange={event => setCode(event.target.value.toUpperCase())}
+                    placeholder="Code eingeben"
+                    autoComplete="off"
+                    inputMode="text"
+                    maxLength={6}
+                  />
+                </label>
+
+                <div className="grid gap-2">
+                  <div className="text-sm text-muted-foreground">Farbe waehlen (optional)</div>
+                  <div className="flex flex-wrap gap-2">
+                    {MARKERS.map(marker => {
+                      const selected = identity === marker.id;
+                      return (
+                        <Button
+                          key={marker.id}
+                          type="button"
+                          variant={selected ? "secondary" : "outline"}
+                          size="sm"
+                          className="gap-2"
+                          aria-pressed={selected}
+                          onClick={() => setIdentity(prev => (prev === marker.id ? null : marker.id))}
+                        >
+                          <span className={`h-3 w-3 rounded-full ${marker.swatch}`} aria-hidden="true" />
+                          <span>{marker.label}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {!isOnline ? <div className="text-sm text-warning">Offline. Verbindung fehlt.</div> : null}
+                {errorMessage ? <div className="text-sm text-warning">{errorMessage}</div> : null}
+
+                <Button
+                  onClick={onJoinClick}
+                  disabled={!code.trim() || status === "joining"}
+                  size="lg"
+                  className="w-full"
                 >
-                  <span className={`h-3 w-3 rounded-full ${marker.swatch}`} aria-hidden="true" />
-                  <span>{marker.label}</span>
-                </button>
-              ))}
+                  {status === "joining" ? "Verbinden..." : "Beitreten"}
+                </Button>
+              </Card>
             </div>
-          </div>
+          </Container>
+        </Section>
+      </main>
 
-          {!isOnline ? <div className="text-sm text-warning">Offline. Verbindung fehlt.</div> : null}
-          {errorMessage ? <div className="text-sm text-warning">{errorMessage}</div> : null}
-
-          <Button onClick={onJoinClick} disabled={!code.trim() || status === "joining"} className="w-full">
-            {status === "joining" ? "Verbinden..." : "Beitreten"}
-          </Button>
-        </Card>
-      </div>
+      <Footer brand="Langmeier Dreieck-1x1" />
 
       {showDemoInfo ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 px-6"
           role="dialog"
           aria-modal="true"
           onClick={() => setShowDemoInfo(false)}
         >
           <div className="w-full max-w-md" onClick={event => event.stopPropagation()}>
-            <Card className="grid gap-4">
+            <Card raised className="grid gap-4 p-6">
               <div className="flex items-start justify-between gap-3">
                 <div className="grid gap-1">
-                  <h2 className="text-lg font-semibold text-ink">Demo starten</h2>
-                  <p className="text-sm text-muted">
+                  <h2 className="text-lg font-semibold text-foreground">Demo starten</h2>
+                  <p className="text-sm text-muted-foreground">
                     Demo laeuft lokal mit fest verdrahteter Standard-Konfiguration.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="text-sm text-muted"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShowDemoInfo(false)}
                   aria-label="Demo Hinweise schliessen"
                 >
                   Schliessen
-                </button>
+                </Button>
               </div>
 
-              <div className="grid gap-2 rounded-swiss border border-grid-border bg-bg px-4 py-3">
-                <div className="text-xs uppercase tracking-wide text-muted">Demo-Code</div>
-                <div className="text-xl font-semibold tracking-[0.3em] text-ink">{PRIMARY_DEMO_JOIN_CODE}</div>
-                <div className="text-xs text-muted">Direktlink: #/demo</div>
+              <div className="grid gap-2 rounded-lg border border-border/50 bg-background px-4 py-3">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Demo-Code</div>
+                <div className="text-xl font-semibold tracking-widest text-foreground">{PRIMARY_DEMO_JOIN_CODE}</div>
+                <div className="text-xs text-muted-foreground">Direktlink: #/demo</div>
               </div>
 
-              <div className="grid gap-2 text-sm text-muted">
+              <div className="grid gap-2 text-sm text-muted-foreground">
                 <div>Keine echte Klasse noetig.</div>
                 <div>Events bleiben lokal und werden nicht synchronisiert.</div>
               </div>
@@ -271,6 +294,6 @@ export function Join() {
           </div>
         </div>
       ) : null}
-    </main>
+    </div>
   );
 }

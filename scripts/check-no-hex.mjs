@@ -3,7 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const allowed = new Set([path.join(root, "packages", "theme", "tokens.css")]);
-const ignoreDirs = new Set(["node_modules", ".git", "dist", "build", "coverage", ".turbo"]);
+const ignoreDirs = new Set(["node_modules", ".git", "dist", "build", "coverage", ".turbo", "docs", "spec"]);
 const textExtensions = new Set([
   ".ts",
   ".tsx",
@@ -22,14 +22,25 @@ const textExtensions = new Set([
 
 const hexPattern = /#[0-9a-fA-F]{3,8}\b/g;
 const offenders = [];
+const paletteOffenders = [];
+const palettePattern =
+  /\b(?:bg|text|border|from|via|to|ring|fill|stroke|outline|shadow)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b/g;
 
 walk(root);
 
-if (offenders.length > 0) {
-  console.error("Raw hex colors found outside packages/theme/tokens.css:");
-  offenders.forEach(entry => {
-    console.error(`- ${entry.file}:${entry.line}: ${entry.match}`);
-  });
+if (offenders.length > 0 || paletteOffenders.length > 0) {
+  if (offenders.length > 0) {
+    console.error("Raw hex colors found outside packages/theme/tokens.css:");
+    offenders.forEach(entry => {
+      console.error(`- ${entry.file}:${entry.line}: ${entry.match}`);
+    });
+  }
+  if (paletteOffenders.length > 0) {
+    console.error("Palette utility classes found outside packages/theme/tokens.css:");
+    paletteOffenders.forEach(entry => {
+      console.error(`- ${entry.file}:${entry.line}: ${entry.match}`);
+    });
+  }
   process.exit(1);
 }
 
@@ -59,5 +70,9 @@ function scanFile(filePath) {
   while ((match = hexPattern.exec(contents))) {
     const line = contents.slice(0, match.index).split("\n").length;
     offenders.push({ file: path.relative(root, filePath), line, match: match[0] });
+  }
+  while ((match = palettePattern.exec(contents))) {
+    const line = contents.slice(0, match.index).split("\n").length;
+    paletteOffenders.push({ file: path.relative(root, filePath), line, match: match[0] });
   }
 }

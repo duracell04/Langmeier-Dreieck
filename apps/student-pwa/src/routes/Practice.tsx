@@ -626,7 +626,7 @@ export function Practice() {
   if (!task) {
     return (
       <PracticeFrame>
-        <div className="text-sm text-muted">Lade...</div>
+        <div className="text-sm text-muted-foreground">Lade...</div>
       </PracticeFrame>
     );
   }
@@ -684,10 +684,10 @@ export function Practice() {
     <PracticeFrame
       header={
         <>
-          <div className="text-sm text-muted">
+          <div className="text-xs text-muted-foreground">
             {progress}/{sessionTotal}
           </div>
-          {mode === "test" ? <div className="text-sm text-muted">{elapsedLabel}</div> : null}
+          {mode === "test" ? <div className="text-xs text-muted-foreground">{elapsedLabel}</div> : null}
           <div className="flex items-center gap-2">
             {!isOnline ? (
               <Badge>Offline</Badge>
@@ -712,7 +712,7 @@ export function Practice() {
         </div>
       }
     >
-      <div className="grid w-full place-items-center gap-6">
+      <div className="grid w-full place-items-center gap-8">
         <TriangleDisplay
           product={triangleProduct}
           factorA={triangleFactorA}
@@ -724,10 +724,10 @@ export function Practice() {
         />
 
         {task.operation === "div" ? (
-          <div className="flex items-center gap-2 text-sm text-muted">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="tabular-nums text-ink">{productValue}</span>
             <span>:</span>
-            <span className="rounded-swiss border border-dashed border-grid-border px-2 py-1 text-muted tabular-nums">
+            <span className="rounded-lg border border-dashed border-border/60 bg-card px-2 py-1 text-muted-foreground tabular-nums">
               {divisorValue}
             </span>
             <span>=</span>

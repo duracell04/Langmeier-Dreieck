@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { cn } from "../utils/cn";
 
 export type KeypadKey = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "backspace" | "enter";
@@ -29,21 +29,21 @@ export function Keypad({ onKey, disabled = false, className }: KeypadProps) {
     <div className={cn("grid grid-cols-3 gap-3", className)} role="group" aria-label="Tastatur">
       {KEYS.map(key => {
         const isAction = key === "backspace" || key === "enter";
-        const label = key === "backspace" ? "⌫" : key === "enter" ? "✓" : key;
+        const label = key === "backspace" ? "Del" : key === "enter" ? "OK" : key;
         const ariaLabel =
-          key === "backspace" ? "Löschen" : key === "enter" ? "Bestätigen" : `Zahl ${key}`;
+          key === "backspace" ? "Loeschen" : key === "enter" ? "Bestaetigen" : `Zahl ${key}`;
 
         return (
           <button
             key={key}
             type="button"
             className={cn(
-              "min-h-touch min-w-touch rounded-swiss border border-grid-border bg-surface text-2xl font-semibold text-ink",
-              "transition duration-fast ease-swiss",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              "min-h-touch min-w-touch rounded-lg border border-border/60 bg-card text-2xl font-semibold text-foreground",
+              "shadow-subtle",
+              "transition-subtle focus-ring",
               "active:scale-95",
               "motion-reduce:transition-none motion-reduce:transform-none",
-              isAction && "text-xl",
+              isAction && "text-lg bg-secondary text-secondary-foreground",
               disabled && "opacity-50 cursor-not-allowed"
             )}
             onClick={() => onKey(key)}

@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { cn } from "../utils/cn";
 
 export type TriangleSlot = "product" | "factorA" | "factorB";
@@ -38,37 +38,27 @@ export const TriangleDisplay = React.forwardRef<HTMLDivElement, TriangleDisplayP
     },
     ref
   ) => {
-    const opSymbol = operation === "mul" ? "×" : "÷";
+    const opSymbol = operation === "mul" ? "\u00D7" : "\u00F7";
 
     const isLocked = (slot: TriangleSlot) => lockedSlots.includes(slot);
     const isMissing = (slot: TriangleSlot) => missingSlot === slot;
 
-    const missingBorder =
+    const statusRing =
       status === "success"
-        ? "border-status-success"
+        ? "ring-2 ring-status-success"
         : status === "error"
-          ? "border-status-error"
-          : "border-focus";
+          ? "ring-2 ring-status-error"
+          : status === "hint"
+            ? "ring-2 ring-status-warning"
+            : "";
 
-    const missingRing =
-      status === "success"
-        ? "ring-status-success"
-        : status === "error"
-          ? "ring-status-error"
-          : "ring-focus";
-
-    const slotBase =
-      "min-w-touch min-h-touch px-3 py-2 rounded-swiss border bg-surface " +
-      "tabular-nums text-center flex items-center justify-center select-none";
-
-    const slotClass = (slot: TriangleSlot) =>
+    const slotClass = (slot: TriangleSlot, variant: "product" | "factor") =>
       cn(
-        slotBase,
-        "border-grid-border",
-        isLocked(slot) && "opacity-70 border-dashed text-muted",
-        isMissing(slot) &&
-          cn("border-2", missingBorder, "ring-2", missingRing, "ring-offset-2 ring-offset-surface"),
-        status === "hint" && isMissing(slot) && "ring-2 ring-focus"
+        "triangle-node",
+        isMissing(slot) ? "triangle-node-missing" : variant === "product" ? "triangle-node-product" : "triangle-node-factor",
+        isLocked(slot) && "opacity-70 border-dashed text-muted-foreground",
+        isMissing(slot) && statusRing,
+        isMissing(slot) && "ring-offset-2 ring-offset-bg"
       );
 
     const label =
@@ -80,36 +70,25 @@ export const TriangleDisplay = React.forwardRef<HTMLDivElement, TriangleDisplayP
     return (
       <div
         ref={ref}
-        className={cn("relative w-full max-w-triangle aspect-square", className)}
+        className={cn("triangle-container", className)}
         role="img"
         aria-label={label}
         data-status={status}
       >
-        <svg
-          viewBox="0 0 100 100"
-          className="absolute inset-0 h-full w-full text-grid-border pointer-events-none"
-          aria-hidden="true"
-        >
-          <polygon points="50,8 92,92 8,92" fill="none" stroke="currentColor" strokeWidth="1" />
-          <line x1="50" y1="8" x2="50" y2="92" stroke="currentColor" strokeWidth="1" opacity="0.35" />
+        <div className={slotClass("product", "product")}>{product}</div>
+
+        <svg className="w-24 h-6 text-border" viewBox="0 0 96 24" fill="none" aria-hidden="true">
+          <path d="M48 0 L16 24 M48 0 L80 24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
 
-        <div className="absolute inset-0 grid grid-rows-2 grid-cols-3 items-center justify-items-center p-5">
-          <div className="row-start-1 col-span-3 flex flex-col items-center justify-center">
-            <div className={cn(slotClass("product"), "text-product font-semibold text-ink")}>{product}</div>
-          </div>
+        <div className="flex items-center gap-8">
+          <div className={slotClass("factorA", "factor")}>{factorA}</div>
+          <div className={slotClass("factorB", "factor")}>{factorB}</div>
+        </div>
 
-          <div className="row-start-2 col-start-1">
-            <div className={cn(slotClass("factorA"), "text-factor font-semibold text-ink-2")}>{factorA}</div>
-          </div>
-
-          <div className="row-start-2 col-start-2">
-            <div className="text-operator font-semibold text-muted">{opSymbol}</div>
-          </div>
-
-          <div className="row-start-2 col-start-3">
-            <div className={cn(slotClass("factorB"), "text-factor font-semibold text-ink-2")}>{factorB}</div>
-          </div>
+        <div className="flex items-center gap-6 mt-2 text-xs text-muted-foreground">
+          <span className={cn(operation === "mul" && "text-primary font-medium")}>{"\u00D7"}</span>
+          <span className={cn(operation === "div" && "text-primary font-medium")}>{"\u00F7"}</span>
         </div>
       </div>
     );

@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { cn } from "../utils/cn";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -6,10 +6,10 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const toneClasses: Record<NonNullable<BadgeProps["tone"]>, string> = {
-  neutral: "border-grid-border text-muted",
-  success: "border-status-success text-ink",
-  warning: "border-status-warning text-ink",
-  info: "border-status-info text-ink",
+  neutral: "border-border/50 bg-secondary text-foreground",
+  success: "border-status-success bg-status-success/10 text-success",
+  warning: "border-status-warning bg-status-warning/10 text-warning",
+  info: "border-status-info bg-status-info/10 text-info",
 };
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
@@ -17,8 +17,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     <span
       ref={ref}
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-micro font-semibold uppercase tracking-wide",
-        "bg-surface",
+        "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide",
         toneClasses[tone],
         className
       )}
@@ -28,3 +27,4 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
 );
 
 Badge.displayName = "Badge";
+
