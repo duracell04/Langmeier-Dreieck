@@ -2,6 +2,7 @@
 import { createRoot } from "react-dom/client";
 import { Join } from "./routes/Join";
 import { Practice } from "./routes/Practice";
+import { Results } from "./routes/Results";
 import { StyleGuide } from "./routes/StyleGuide";
 import "./styles/app.css";
 
@@ -16,6 +17,8 @@ function renderRoute() {
   const hash = window.location.hash || "#/";
   const view = hash.startsWith("#/style-guide")
     ? <StyleGuide />
+    : hash.startsWith("#/results")
+      ? <Results />
     : hash.startsWith("#/practice")
       ? <Practice />
       : <Join />;

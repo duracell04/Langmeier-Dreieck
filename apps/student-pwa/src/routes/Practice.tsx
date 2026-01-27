@@ -427,6 +427,12 @@ export function Practice() {
     emitTaskEnd(task, "correct", attemptsBeforeEnd, structureUsed);
     sessionItemsRef.current += 1;
     sessionCorrectRef.current += 1;
+    if (sessionItemsRef.current >= SESSION_TOTAL) {
+      schedule(() => {
+        window.location.hash = "#/results";
+      }, SUCCESS_DWELL_MS);
+      return;
+    }
     schedule(goNext, SUCCESS_DWELL_MS);
   }, [attemptsBeforeEnd, emitTaskEnd, goNext, schedule, structureUsed, task]);
 
@@ -461,7 +467,14 @@ export function Practice() {
       taskIndexRef.current,
       REQUEUE_POLICY.minSpacing
     );
-  }, [emitTaskEnd, task]);
+    if (sessionItemsRef.current >= SESSION_TOTAL) {
+      schedule(() => {
+        window.location.hash = "#/results";
+      }, REVEAL_DWELL_MS);
+      return;
+    }
+    schedule(goNext, REVEAL_DWELL_MS);
+  }, [emitTaskEnd, goNext, schedule, task]);
 
   const submit = React.useCallback(() => {
     if (!task) return;
@@ -607,7 +620,7 @@ export function Practice() {
   const feedbackDetail = phase === "reveal" ? "Diese Aufgabe kommt wieder." : undefined;
 
   const gridVisible = phase === "structure" || phase === "reveal";
-  const keypadDisabled = phase === "success";
+  const keypadDisabled = phase === "success" || phase === "reveal";
   const feedbackState: FeedbackState = phase === "solve" ? "solve" : phase;
 
   const divisorValue = task.missing === "left" ? rightValue : leftValue;
