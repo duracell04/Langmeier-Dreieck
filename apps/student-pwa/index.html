@@ -4,6 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Triangle 1x1 Student</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      .boot-loader {
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        padding: 20px;
+        color: #111827;
+      }
+      .boot-bar {
+        position: fixed;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: rgba(17, 24, 39, 0.08);
+        overflow: hidden;
+        z-index: 9999;
+      }
+      .boot-bar__fill {
+        height: 100%;
+        width: 35%;
+        background: linear-gradient(90deg, #0ea5e9, #22c55e);
+        box-shadow: 0 0 12px rgba(14, 165, 233, 0.6);
+        animation: boot-bar 1.2s ease-in-out infinite;
+      }
+      @keyframes boot-bar {
+        0% {
+          transform: translateX(-40%);
+          opacity: 0.8;
+        }
+        70% {
+          transform: translateX(140%);
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(140%);
+          opacity: 0.2;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
@@ -12,7 +51,8 @@
         const root = document.getElementById("root");
         if (!root) return;
         root.innerHTML =
-          '<div style="font-family: system-ui, sans-serif; padding: 16px;">Lade Anwendung...</div>';
+          '<div class="boot-bar"><div class="boot-bar__fill"></div></div>' +
+          '<div class="boot-loader">Loading your learning space...</div>';
         const show = (message) => {
           root.innerHTML =
             '<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \\"Liberation Mono\\", \\"Courier New\\", monospace; white-space: pre-wrap; padding: 16px;">' +

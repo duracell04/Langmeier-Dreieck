@@ -7,6 +7,7 @@ import { Results } from "./routes/Results";
 import { Select } from "./routes/Select";
 import { StyleGuide } from "./routes/StyleGuide";
 import { I18nProvider } from "./i18n";
+import LoadingBar from "./components/LoadingBar";
 import "./styles/app.css";
 
 const rootEl = document.getElementById("root");
@@ -33,7 +34,10 @@ function renderRoute() {
         : <Landing />;
   root.render(
     <I18nProvider>
-      {view}
+      <>
+        <LoadingBar routeKey={hash} />
+        {view}
+      </>
     </I18nProvider>
   );
 }
