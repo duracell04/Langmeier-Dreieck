@@ -23,8 +23,8 @@ export function PracticeFrame({ header, children, footer, className }: PracticeF
             {header}
           </header>
         ) : null}
-        <div className="flex min-h-0 flex-1 flex-col gap-8 lg:flex-row lg:items-center">
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-start gap-6 overflow-y-auto pt-2 sm:pt-4 lg:justify-center lg:pt-0">
+        <div className="flex min-h-0 flex-1 flex-col gap-8 lg:flex-row lg:items-center lg:justify-center lg:gap-12">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-start gap-6 overflow-y-auto pt-2 sm:pt-4 lg:justify-center lg:pt-0 lg:overflow-visible">
             {children}
           </div>
           {footer ? (
