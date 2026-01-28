@@ -8,12 +8,16 @@ import {
 } from "@triangle/ui-kit";
 import { supabase } from "./services/supabaseClient";
 import type { ProductSetId } from "@triangle/types";
+import { createPaymentsClient, resolveEntitlement } from "./services/entitlements";
+import { PaywallGuard } from "./ui/PaywallGuard";
+import { PaywallModal } from "./ui/PaywallModal";
 
 interface ClassRow {
   id: string;
   name: string;
   join_code: string;
   created_at: string;
+  settings?: Record<string, unknown> | null;
 }
 
 interface KpiSummary {
@@ -64,6 +68,11 @@ export function App() {
 
   const [kpis, setKpis] = React.useState<KpiSummary | null>(null);
   const [loadingKpis, setLoadingKpis] = React.useState(false);
+  // Feature-flagged placeholder; keep disabled by default.
+  const showPaywall = import.meta.env.VITE_SHOW_PAYWALL_PLACEHOLDER === "true";
+  const payments = React.useMemo(() => createPaymentsClient(), []);
+  const [paywallOpen, setPaywallOpen] = React.useState(false);
+  const [entitlement, setEntitlement] = React.useState(() => resolveEntitlement(null));
 
   React.useEffect(() => {
     let active = true;
@@ -85,7 +94,7 @@ export function App() {
     setClassError(null);
     const { data, error } = await supabase
       .from("classes")
-      .select("id, name, join_code, created_at")
+      .select("id, name, join_code, created_at, settings")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -203,6 +212,11 @@ export function App() {
     loadKpis(activeClassId);
   }, [activeClassId, loadKpis]);
 
+  React.useEffect(() => {
+    const selected = classes.find(item => item.id === activeClassId) ?? null;
+    setEntitlement(resolveEntitlement(selected?.settings ?? null));
+  }, [activeClassId, classes]);
+
   const handleAuth = async () => {
     setAuthLoading(true);
     setAuthError(null);
@@ -243,6 +257,7 @@ export function App() {
         sessionLength,
         divisionEnabled,
         squareMode,
+        paid: false,
       };
 
       const { error } = await supabase.from("classes").insert({
@@ -278,6 +293,15 @@ export function App() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+  };
+
+  const handleUpgrade = async () => {
+    const result = await payments.startCheckout({ plan: "pro" });
+    if (result.status === "success") {
+      const selected = classes.find(item => item.id === activeClassId) ?? null;
+      setEntitlement(resolveEntitlement(selected?.settings ?? null));
+    }
+    setPaywallOpen(false);
   };
 
   if (!session) {
@@ -572,7 +596,34 @@ export function App() {
             {loadingKpis ? <div className="text-sm text-muted">Lade KPIs...</div> : null}
           </Card>
         </DashboardSection>
+
+        {showPaywall ? (
+          <DashboardSection title="Pro (Platzhalter)">
+            <PaywallGuard
+              entitlement={entitlement}
+              onUpgrade={() => setPaywallOpen(true)}
+              title="Exporte und Langzeitverlauf"
+              description="Freischalten, um Exporte, Verlauf und Co-Teachers zu aktivieren."
+            >
+              <Card elevated className="grid gap-3">
+                <div className="text-sm text-muted">Pro ist aktiv (Demo). Funktionen folgen.</div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" disabled>PDF-Export</Button>
+                  <Button variant="secondary" disabled>CSV-Export</Button>
+                  <Button variant="secondary" disabled>Verlauf</Button>
+                </div>
+              </Card>
+            </PaywallGuard>
+          </DashboardSection>
+        ) : null}
       </div>
+      {showPaywall ? (
+        <PaywallModal
+          open={paywallOpen}
+          onClose={() => setPaywallOpen(false)}
+          onUnlock={handleUpgrade}
+        />
+      ) : null}
     </main>
   );
 }
