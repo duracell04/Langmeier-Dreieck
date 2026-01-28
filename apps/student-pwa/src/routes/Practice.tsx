@@ -640,6 +640,10 @@ export function Practice() {
   const onKey = React.useCallback(
     (key: KeypadKey) => {
       if (phase === "success" || phase === "reveal") return;
+      if (key === "clear") {
+        setInput("");
+        return;
+      }
       if (key === "enter") {
         submit();
         return;
@@ -691,6 +695,12 @@ export function Practice() {
   const reveal = phase === "reveal";
   const elapsedSeconds = Math.floor(elapsedMs / 1000);
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
+  const inputDisplay = input.length ? input : "—";
+  const progressSegments = Math.max(1, Math.min(sessionTotal, 6));
+  const filledSegments = Math.min(
+    progressSegments,
+    Math.max(1, Math.round((progress / sessionTotal) * progressSegments))
+  );
 
   const sharedInput = Boolean(task.squareSharedInput && (missingSlot === "factorA" || missingSlot === "factorB"));
   const triangleProduct = formatSlot(productValue, missingSlot === "product", input, reveal, correct);
@@ -749,6 +759,7 @@ export function Practice() {
 
   return (
     <PracticeFrame
+      footerMode="fixed-mobile"
       header={
         <>
           <div className="grid gap-1 text-xs text-muted-foreground">
@@ -777,40 +788,110 @@ export function Practice() {
       }
       footer={
         <div className="mx-auto w-full max-w-md">
-          <Keypad onKey={onKey} disabled={keypadDisabled} />
+          <div className="card-elevated p-5 sm:p-6">
+            <div className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("practice.answerLabel")}
+            </div>
+            <div
+              className={cn(
+                "mt-4 flex min-h-touch items-center justify-center rounded-xl border border-border/60 bg-muted/40 px-4 py-3 text-center text-2xl font-semibold",
+                input.length ? "text-foreground" : "text-muted-foreground/60"
+              )}
+            >
+              {inputDisplay}
+            </div>
+            <div className="mt-4">
+              <Keypad onKey={onKey} disabled={keypadDisabled} showEnter={false} showClear />
+            </div>
+            <Button
+              variant="hero"
+              size="lg"
+              className="mt-4 w-full"
+              onClick={submit}
+              disabled={keypadDisabled || !input.length}
+            >
+              {t("practice.submit")}
+            </Button>
+          </div>
         </div>
       }
     >
-      <div className="grid w-full place-items-center gap-8">
-        <TriangleDisplay
-          product={triangleProduct}
-          factorA={triangleFactorA}
-          factorB={triangleFactorB}
-          missingSlot={missingSlot}
-          lockedSlots={lockedSlots}
-          operation={task.operation}
-          status={triangleStatus}
-        />
-
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="tabular-nums text-ink">{equationLeft}</span>
-          <span>{equationSymbol}</span>
-          <span
-            className={
-              task.operation === "div"
-                ? "rounded-lg border border-dashed border-border/60 bg-card px-2 py-1 text-muted-foreground tabular-nums"
-                : "tabular-nums text-ink"
-            }
-          >
-            {equationRight}
-          </span>
-          <span>=</span>
-          <span className="tabular-nums text-ink">{equationResult}</span>
+      <div className="flex w-full flex-col items-center gap-6">
+        <div className="w-full max-w-sm">
+          <div className="flex gap-2">
+            {Array.from({ length: progressSegments }, (_, index) => (
+              <div
+                key={`segment-${index}`}
+                className={cn(
+                  "h-2 flex-1 rounded-full transition-subtle",
+                  index < filledSegments ? "bg-primary/40" : "bg-muted"
+                )}
+              />
+            ))}
+          </div>
         </div>
 
-        <FeedbackLadder state={feedbackState} message={feedbackMessage} detail={feedbackDetail} />
+        <div className="card-elevated w-full max-w-sm px-6 py-8 md:px-8">
+          <div className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("practice.taskHeader", { current: progress, total: sessionTotal })}
+          </div>
 
-        <StructureLensGrid visible={gridVisible} rows={leftValue} cols={rightValue} />
+          <div className="mt-6 flex justify-center">
+            <TriangleDisplay
+              product={triangleProduct}
+              factorA={triangleFactorA}
+              factorB={triangleFactorB}
+              missingSlot={missingSlot}
+              lockedSlots={lockedSlots}
+              operation={task.operation}
+              status={triangleStatus}
+            />
+          </div>
+
+          <div className="mt-5 flex items-center justify-center gap-2 text-base text-muted-foreground">
+            <span className="tabular-nums text-ink">{equationLeft}</span>
+            <span>{equationSymbol}</span>
+            <span
+              className={
+                task.operation === "div"
+                  ? "rounded-lg border border-dashed border-border/60 bg-card px-2 py-1 text-muted-foreground tabular-nums"
+                  : "tabular-nums text-ink"
+              }
+            >
+              {equationRight}
+            </span>
+            <span>=</span>
+            <span className="tabular-nums text-ink">{equationResult}</span>
+          </div>
+
+          {feedbackState !== "solve" || feedbackMessage || feedbackDetail ? (
+            <div className="mt-5">
+              <FeedbackLadder state={feedbackState} message={feedbackMessage} detail={feedbackDetail} />
+            </div>
+          ) : null}
+        </div>
+
+        {gridVisible ? (
+          <div className="card-elevated w-full max-w-sm px-5 py-6 text-center">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("practice.structureLabel")}
+            </div>
+            <div className="mt-4 flex justify-center">
+              <StructureLensGrid
+                visible={gridVisible}
+                rows={leftValue}
+                cols={rightValue}
+                showNumbers
+                highlight="both"
+                outlineFilledRegion
+                gridSize={Math.max(6, Math.min(10, Math.max(leftValue, rightValue)))}
+              />
+            </div>
+            <div className="mt-4 text-sm text-muted-foreground">
+              {leftValue} \u00D7 {rightValue} = {productValue}
+            </div>
+          </div>
+        ) : null}
       </div>
     </PracticeFrame>
   );

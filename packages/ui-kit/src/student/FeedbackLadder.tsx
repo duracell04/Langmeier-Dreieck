@@ -12,8 +12,8 @@ export interface FeedbackLadderProps {
 
 const toneClasses: Record<Exclude<FeedbackState, "solve">, string> = {
   success: "border-status-success bg-status-success/10",
-  wrong1: "border-status-warning bg-status-warning/10",
-  structure: "border-status-info bg-status-info/10",
+  wrong1: "border-status-error bg-status-error/10",
+  structure: "border-status-error bg-status-error/10",
   reveal: "border-status-info bg-status-info/10",
 };
 

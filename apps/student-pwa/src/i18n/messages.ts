@@ -125,6 +125,10 @@ export const messages = {
     },
     practice: {
       loading: "Lade...",
+      answerLabel: "Deine Antwort",
+      submit: "Pr\u00fcfen",
+      taskHeader: "Aufgabe {current} von {total}",
+      structureLabel: "Strukturlinse",
       progress: "{current}/{total} Aufgaben",
       correctCount: "Richtig: {count}",
       status: {
@@ -157,7 +161,7 @@ export const messages = {
       },
       feedback: {
         tryAgain: "Nochmal versuchen.",
-        structure: "Schauen wir auf die Struktur.",
+        structure: "Nicht ganz. Schau dir die Hilfe an!",
         answer: "Antwort: {answer}",
         correct: "Richtig \u2713",
         requeue: "Diese Aufgabe kommt wieder.",
@@ -308,6 +312,10 @@ export const messages = {
     },
     practice: {
       loading: "Loading...",
+      answerLabel: "Your answer",
+      submit: "Check",
+      taskHeader: "Task {current} of {total}",
+      structureLabel: "Structure lens",
       progress: "{current}/{total} tasks",
       correctCount: "Correct: {count}",
       status: {
@@ -340,7 +348,7 @@ export const messages = {
       },
       feedback: {
         tryAgain: "Try again.",
-        structure: "Let's look at the structure.",
+        structure: "Not quite. Take a look at the help.",
         answer: "Answer: {answer}",
         correct: "Correct \u2713",
         requeue: "This task will return.",

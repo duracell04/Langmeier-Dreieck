@@ -2,7 +2,7 @@
 import { cn } from "../utils/cn";
 
 export type GridMode = "rect" | "count";
-export type GridHighlight = "rows" | "cols" | "none";
+export type GridHighlight = "rows" | "cols" | "both" | "none";
 
 export interface StructureLensGridProps {
   rows: number;
@@ -54,7 +54,8 @@ export function StructureLensGrid({
   const highlightCell = (row: number, col: number) => {
     if (highlight === "none") return false;
     if (highlight === "rows") return row < r;
-    return col < c;
+    if (highlight === "cols") return col < c;
+    return row < r || col < c;
   };
 
   return (

@@ -1,44 +1,65 @@
 ﻿import * as React from "react";
 import { cn } from "../utils/cn";
 
-export type KeypadKey = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "backspace" | "enter";
+export type KeypadKey =
+  | "0"
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "8"
+  | "9"
+  | "backspace"
+  | "enter"
+  | "clear";
 
 export interface KeypadProps {
   onKey: (key: KeypadKey) => void;
   disabled?: boolean;
+  showEnter?: boolean;
+  showClear?: boolean;
   className?: string;
 }
 
-const KEYS: KeypadKey[] = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "9",
-  "backspace",
-  "0",
-  "enter",
-];
+function buildKeys({ showEnter, showClear }: Pick<KeypadProps, "showEnter" | "showClear">): KeypadKey[] {
+  if (!showEnter) {
+    return ["1", "2", "3", "4", "5", "6", "7", "8", "9", showClear ? "clear" : "backspace", "0", "backspace"];
+  }
+  return ["1", "2", "3", "4", "5", "6", "7", "8", "9", "backspace", "0", "enter"];
+}
 
-export function Keypad({ onKey, disabled = false, className }: KeypadProps) {
+export function Keypad({
+  onKey,
+  disabled = false,
+  showEnter = true,
+  showClear = false,
+  className,
+}: KeypadProps) {
+  const keys = React.useMemo(() => buildKeys({ showEnter, showClear }), [showEnter, showClear]);
+
   return (
     <div className={cn("grid grid-cols-3 gap-3", className)} role="group" aria-label="Tastatur">
-      {KEYS.map(key => {
-        const isAction = key === "backspace" || key === "enter";
-        const label = key === "backspace" ? "Del" : key === "enter" ? "OK" : key;
+      {keys.map(key => {
+        const isAction = key === "backspace" || key === "enter" || key === "clear";
+        const label = key === "backspace" ? "⌫" : key === "enter" ? "OK" : key === "clear" ? "AC" : key;
         const ariaLabel =
-          key === "backspace" ? "Löschen" : key === "enter" ? "Bestätigen" : `Zahl ${key}`;
+          key === "backspace"
+            ? "Löschen"
+            : key === "enter"
+              ? "Bestätigen"
+              : key === "clear"
+                ? "Alles löschen"
+                : `Zahl ${key}`;
 
         return (
           <button
             key={key}
             type="button"
             className={cn(
-              "min-h-touch min-w-touch rounded-lg border border-border/60 bg-card text-2xl font-semibold text-foreground",
+              "min-h-touch min-w-touch rounded-xl border border-border/60 bg-card text-2xl font-semibold text-foreground",
               "shadow-subtle",
               "transition-subtle focus-ring",
               "active:scale-95",
