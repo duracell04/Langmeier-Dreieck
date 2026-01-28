@@ -1,0 +1,38 @@
+{
+  "id": "pack_ch_de_v1",
+  "locale": "de-CH",
+  "version": 1,
+  "productSets": [
+    {
+      "id": "products_3_4",
+      "label": "Produkte aus 3 und 4 Reihen",
+      "products": [12, 16, 18, 20, 24, 30, 36, 40]
+    },
+    {
+      "id": "products_2",
+      "label": "Produkte aus 2 Reihen",
+      "products": [14, 15, 21, 27, 28, 32, 35, 42, 48, 54, 56, 63, 72]
+    },
+    {
+      "id": "squares",
+      "label": "Quadratzahlen",
+      "products": [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+    },
+    {
+      "id": "cardinals",
+      "label": "Einer- und Zehnerzahlen",
+      "products": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 50, 60, 70, 80, 90]
+    },
+    {
+      "id": "all_products",
+      "label": "Alle Produkte",
+      "products": [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        12, 14, 15, 16, 18, 20, 21, 24, 25, 27,
+        28, 30, 32, 35, 36, 40, 42, 45, 48, 49,
+        50, 54, 56, 60, 63, 64, 70, 72, 80, 81,
+        90, 100
+      ]
+    }
+  ]
+}

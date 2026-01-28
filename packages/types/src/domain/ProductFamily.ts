@@ -1,6 +1,4 @@
-﻿// packages/types/src/domain/ProductFamily.ts
-export type SetId = "core" | "squares" | "division" | "tricky";
-
+// packages/types/src/domain/ProductFamily.ts
 export interface ProductFamily {
   id: string;                       // UUID
   product: number;                  // e.g. 24

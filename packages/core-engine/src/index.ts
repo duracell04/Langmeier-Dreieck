@@ -3,6 +3,7 @@ export * from "./engine/picker";
 export * from "./engine/mastery";
 export * from "./engine/errorTyping";
 export * from "./engine/families";
+export * from "./engine/productSets";
 export * from "./engine/rng";
 export * from "./engine/gamification";
 export * from "./engine/phaseMachine";

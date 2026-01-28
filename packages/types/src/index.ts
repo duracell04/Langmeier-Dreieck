@@ -1,5 +1,6 @@
-﻿// packages/types/src/index.ts
+// packages/types/src/index.ts
 export * from "./domain/ProductFamily";
+export * from "./domain/ProductSet";
 export * from "./domain/Task";
 export * from "./domain/Attempt";
 export * from "./domain/Mastery";
