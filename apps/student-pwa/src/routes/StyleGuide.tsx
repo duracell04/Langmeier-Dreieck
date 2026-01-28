@@ -13,6 +13,8 @@ import {
   TextInput,
   TriangleDisplay,
 } from "@triangle/ui-kit";
+import { LanguageToggle } from "../ui/LanguageToggle";
+import { useI18n } from "../i18n";
 
 const SWATCHES = [
   { label: "bg", className: "bg-bg" },
@@ -24,6 +26,10 @@ const SWATCHES = [
 ];
 
 export function StyleGuide() {
+  const { t } = useI18n();
+  const year = new Date().getFullYear();
+  const copyright = t("common.copyright", { year, brand: t("common.brand") });
+
   return (
     <div className="min-h-screen bg-bg text-foreground font-sans">
       <Navbar
@@ -34,10 +40,11 @@ export function StyleGuide() {
           { label: "Layout", href: "#layout" },
           { label: "Student", href: "#student-instrument" },
         ]}
-        ctaLabel="Zurueck"
+        ctaLabel={t("common.back")}
         onCtaClick={() => {
           window.location.hash = "#/join";
         }}
+        rightSlot={<LanguageToggle />}
       />
 
       <main className="flex-1">
@@ -150,10 +157,11 @@ export function StyleGuide() {
       </main>
 
       <Footer
-        brand="Langmeier Dreieck-1x1"
+        brand={t("common.brand")}
+        copyrightText={copyright}
         links={[
-          { label: "Datenschutz", href: "#/datenschutz" },
-          { label: "Impressum", href: "#/impressum" },
+          { label: t("landing.footer.privacy"), href: "#/datenschutz" },
+          { label: t("landing.footer.imprint"), href: "#/impressum" },
         ]}
       />
     </div>

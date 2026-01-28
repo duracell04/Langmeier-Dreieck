@@ -19,6 +19,7 @@ export interface NavbarProps {
   ctaLabel?: string;
   ctaHref?: string;
   onCtaClick?: () => void;
+  rightSlot?: React.ReactNode;
   className?: string;
 }
 
@@ -33,6 +34,7 @@ export function Navbar({
   ctaLabel,
   ctaHref,
   onCtaClick,
+  rightSlot,
   className,
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -114,36 +116,40 @@ export function Navbar({
               {ctaLabel}
             </Button>
           ) : null}
+          {rightSlot ? <div className="flex items-center">{rightSlot}</div> : null}
         </div>
 
-        <button
-          type="button"
-          className="md:hidden p-2 -mr-2 text-muted-foreground hover:text-foreground focus-ring rounded-md"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? "Menu schliessen" : "Menu oeffnen"}
-        >
-          <span className="sr-only">Menu</span>
-          <span className="relative block h-5 w-6">
-            <span
-              className={cn(
-                "absolute left-0 top-1 block h-0.5 w-6 bg-foreground transition-all",
-                mobileMenuOpen && "top-2.5 rotate-45"
-              )}
-            />
-            <span
-              className={cn(
-                "absolute left-0 top-2.5 block h-0.5 w-6 bg-foreground transition-all",
-                mobileMenuOpen && "opacity-0"
-              )}
-            />
-            <span
-              className={cn(
-                "absolute left-0 top-4 block h-0.5 w-6 bg-foreground transition-all",
-                mobileMenuOpen && "top-2.5 -rotate-45"
-              )}
-            />
-          </span>
-        </button>
+        <div className="md:hidden flex items-center gap-2">
+          {rightSlot ? <div className="flex items-center">{rightSlot}</div> : null}
+          <button
+            type="button"
+            className="p-2 -mr-2 text-muted-foreground hover:text-foreground focus-ring rounded-md"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Menu schliessen" : "Menu oeffnen"}
+          >
+            <span className="sr-only">Menu</span>
+            <span className="relative block h-5 w-6">
+              <span
+                className={cn(
+                  "absolute left-0 top-1 block h-0.5 w-6 bg-foreground transition-all",
+                  mobileMenuOpen && "top-2.5 rotate-45"
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute left-0 top-2.5 block h-0.5 w-6 bg-foreground transition-all",
+                  mobileMenuOpen && "opacity-0"
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute left-0 top-4 block h-0.5 w-6 bg-foreground transition-all",
+                  mobileMenuOpen && "top-2.5 -rotate-45"
+                )}
+              />
+            </span>
+          </button>
+        </div>
       </nav>
 
       {mobileMenuOpen ? (

@@ -4,6 +4,8 @@ import { computeGamification } from "@triangle/core-engine";
 import type { SessionEndEvent, StudentEvent, TaskEndEvent } from "@triangle/types";
 import { queryEvents, getStudentRef } from "@triangle/storage";
 import { joinClass, loadStoredIdentity } from "../services/joinUseCases";
+import { useI18n } from "../i18n";
+import { LanguageToggle } from "../ui/LanguageToggle";
 
 type Summary = {
   total: number;
@@ -22,6 +24,7 @@ function isSessionEndEvent(event: StudentEvent): event is SessionEndEvent {
 }
 
 export function Results() {
+  const { t } = useI18n();
   const [summary, setSummary] = React.useState<Summary | null>(null);
   const [badges, setBadges] = React.useState<Array<{ id: string; label: string }>>([]);
   const [stored, setStored] = React.useState<Awaited<ReturnType<typeof loadStoredIdentity>> | null>(null);
@@ -93,39 +96,42 @@ export function Results() {
       window.location.hash = "#/practice";
     } catch {
       setStatus("error");
-      setErrorMessage("Beitritt nicht moeglich. Bitte Code pruefen.");
+      setErrorMessage(t("results.errors.joinFailed"));
     }
   };
 
   return (
     <main className="min-h-screen bg-bg text-ink font-sans">
       <div className="mx-auto grid w-full max-w-2xl gap-6 px-6 py-10">
+        <div className="flex justify-end">
+          <LanguageToggle />
+        </div>
         <header className="grid gap-2 text-center">
-          <p className="text-micro uppercase tracking-wide text-muted">Dreieck-1x1</p>
-          <h1 className="text-3xl font-semibold text-ink">Ergebnis</h1>
-          <p className="text-sm text-muted">Uebersicht der letzten Sitzung.</p>
+          <p className="text-micro uppercase tracking-wide text-muted">{t("landing.hero.eyebrow")}</p>
+          <h1 className="text-3xl font-semibold text-ink">{t("results.title")}</h1>
+          <p className="text-sm text-muted">{t("results.subtitle")}</p>
         </header>
 
         <Card className="grid gap-4">
           {summary ? (
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-swiss border border-grid-border bg-surface px-3 py-3">
-                <div className="text-micro uppercase tracking-wide text-muted">Aufgaben</div>
+                <div className="text-micro uppercase tracking-wide text-muted">{t("results.labels.tasks")}</div>
                 <div className="mt-2 text-2xl font-semibold text-ink">{summary.total}</div>
               </div>
               <div className="rounded-swiss border border-grid-border bg-surface px-3 py-3">
-                <div className="text-micro uppercase tracking-wide text-muted">Genauigkeit</div>
+                <div className="text-micro uppercase tracking-wide text-muted">{t("results.labels.accuracy")}</div>
                 <div className="mt-2 text-2xl font-semibold text-ink">
                   {Math.round(summary.accuracy * 100)}%
                 </div>
               </div>
               <div className="rounded-swiss border border-grid-border bg-surface px-3 py-3">
-                <div className="text-micro uppercase tracking-wide text-muted">Aufgedeckt</div>
+                <div className="text-micro uppercase tracking-wide text-muted">{t("results.labels.revealed")}</div>
                 <div className="mt-2 text-2xl font-semibold text-ink">{summary.reveals}</div>
               </div>
             </div>
           ) : (
-            <div className="text-sm text-muted">Noch keine Resultate vorhanden.</div>
+            <div className="text-sm text-muted">{t("results.empty")}</div>
           )}
 
           {badges.length > 0 ? (
@@ -140,11 +146,11 @@ export function Results() {
         </Card>
 
         <div className="grid gap-3">
-          <Button onClick={onRetry}>Nochmals ueben</Button>
-          <Button variant="secondary" onClick={onHome}>Home</Button>
+          <Button onClick={onRetry}>{t("results.actions.retry")}</Button>
+          <Button variant="secondary" onClick={onHome}>{t("results.actions.home")}</Button>
           {stored ? (
             <Button variant="ghost" onClick={onRejoin} disabled={status === "joining"}>
-              Letzte Klasse wieder beitreten
+              {t("results.actions.rejoin")}
             </Button>
           ) : null}
         </div>

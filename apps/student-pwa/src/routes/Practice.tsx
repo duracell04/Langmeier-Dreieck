@@ -45,6 +45,8 @@ import {
   type ClassConfig,
 } from "@triangle/storage";
 import { createBaseEvent, recordEvent, syncPendingEvents, type EventContext } from "../services/practiceUseCases";
+import { useI18n } from "../i18n";
+import { LanguageToggle } from "../ui/LanguageToggle";
 
 const SUCCESS_DWELL_MS = 700;
 const REVEAL_DWELL_MS = 1600;
@@ -98,6 +100,7 @@ function formatSlot(value: number, isMissing: boolean, input: string, reveal: bo
 }
 
 export function Practice() {
+  const { t } = useI18n();
   const families = React.useMemo(() => buildCoreFamilies(), []);
   const sessionManager = React.useMemo(() => new SessionManager(new IdbSessionStorage()), []);
 
@@ -626,7 +629,7 @@ export function Practice() {
   if (!task) {
     return (
       <PracticeFrame>
-        <div className="text-sm text-muted-foreground">Lade...</div>
+        <div className="text-sm text-muted-foreground">{t("practice.loading")}</div>
       </PracticeFrame>
     );
   }
@@ -663,16 +666,16 @@ export function Practice() {
 
   const feedbackMessage =
     phase === "wrong1"
-      ? "Nochmal versuchen."
+      ? t("practice.feedback.tryAgain")
       : phase === "structure"
-        ? "Schauen wir auf die Struktur."
+        ? t("practice.feedback.structure")
         : phase === "reveal"
-          ? `Antwort: ${correct}`
+          ? t("practice.feedback.answer", { answer: correct })
           : phase === "success"
-            ? "Richtig \u2713"
+            ? t("practice.feedback.correct")
             : undefined;
 
-  const feedbackDetail = phase === "reveal" ? "Diese Aufgabe kommt wieder." : undefined;
+  const feedbackDetail = phase === "reveal" ? t("practice.feedback.requeue") : undefined;
 
   const gridVisible = phase === "structure" || phase === "reveal";
   const keypadDisabled = phase === "success" || phase === "reveal";
@@ -690,19 +693,20 @@ export function Practice() {
           {mode === "test" ? <div className="text-xs text-muted-foreground">{elapsedLabel}</div> : null}
           <div className="flex items-center gap-2">
             {!isOnline ? (
-              <Badge>Offline</Badge>
+              <Badge>{t("practice.status.offline")}</Badge>
             ) : syncStatus === "syncing" ? (
-              <Badge>Synchronisieren...</Badge>
+              <Badge>{t("practice.status.syncing")}</Badge>
             ) : syncStatus === "error" ? (
               <>
-                <Badge>Sync Fehler</Badge>
+                <Badge>{t("practice.status.syncError")}</Badge>
                 <Button variant="ghost" size="sm" onClick={handleSync}>
-                  Erneut
+                  {t("practice.status.retry")}
                 </Button>
               </>
             ) : (
-              <Badge>Verbunden</Badge>
+              <Badge>{t("practice.status.connected")}</Badge>
             )}
+            <LanguageToggle className="ml-2" />
           </div>
         </>
       }

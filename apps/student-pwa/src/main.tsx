@@ -5,6 +5,7 @@ import { Landing } from "./routes/Landing";
 import { Practice } from "./routes/Practice";
 import { Results } from "./routes/Results";
 import { StyleGuide } from "./routes/StyleGuide";
+import { I18nProvider } from "./i18n";
 import "./styles/app.css";
 
 const rootEl = document.getElementById("root");
@@ -27,7 +28,11 @@ function renderRoute() {
       : hash.startsWith("#/join") || hash.startsWith("#/demo")
         ? <Join />
         : <Landing />;
-  root.render(view);
+  root.render(
+    <I18nProvider>
+      {view}
+    </I18nProvider>
+  );
 }
 
 window.addEventListener("hashchange", renderRoute);

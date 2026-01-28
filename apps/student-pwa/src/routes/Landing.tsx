@@ -11,67 +11,34 @@ import {
   StructureLensGrid,
   TriangleDisplay,
 } from "@triangle/ui-kit";
-
-const NAV_LINKS = [
-  { label: "Methode", href: "#methode" },
-  { label: "Lehrpersonen", href: "#lehrpersonen" },
-  { label: "Lernende", href: "#lernende" },
-  { label: "Start", href: "#start" },
-];
-
-const VALUE_PROPS = [
-  {
-    title: "Produkte statt Reihen",
-    description:
-      "Das Lernen wird nach Produkten und ihren Faktorenpaaren organisiert. So entsteht vernetztes Wissen.",
-  },
-  {
-    title: "Dreieck als Relations-Interface",
-    description:
-      "Das Dreieck macht Beziehungen sichtbar. Lernende verstehen Zusammenhaenge, nicht nur Aufgaben.",
-  },
-  {
-    title: "Multiplikation und Division zusammen",
-    description:
-      "Beide Operationen teilen dieselbe Struktur. Wer multipliziert, versteht auch das Dividieren.",
-  },
-];
-
-const STEPS = [
-  {
-    step: "1",
-    title: "Session erstellen",
-    description: "In wenigen Klicks eine Uebungssession konfigurieren.",
-  },
-  {
-    step: "2",
-    title: "QR oder Code teilen",
-    description: "Lernende scannen den QR-Code oder geben einen kurzen Code ein.",
-  },
-  {
-    step: "3",
-    title: "Ueben und Auswerten",
-    description: "Lernende ueben selbststaendig. Lehrpersonen sehen Fortschritte.",
-  },
-];
-
-const PROOF_POINTS = [
-  "Offline faehig nach dem ersten Laden",
-  "Keine Schueler-Accounts noetig",
-  "Ruhige, ermutigende Rueckmeldungen",
-  "Lehrperson behaelt die Kontrolle",
-];
+import { useI18n } from "../i18n";
+import { LanguageToggle } from "../ui/LanguageToggle";
 
 export function Landing() {
+  const { t, tList } = useI18n();
+  const year = new Date().getFullYear();
+  const copyright = t("common.copyright", { year, brand: t("common.brand") });
+
+  const navLinks = [
+    { label: t("landing.nav.method"), href: "#methode" },
+    { label: t("landing.nav.teachers"), href: "#lehrpersonen" },
+    { label: t("landing.nav.learners"), href: "#lernende" },
+    { label: t("landing.nav.start"), href: "#start" },
+  ];
+  const valueProps = tList<{ title: string; description: string }>("landing.valueProps");
+  const steps = tList<{ step: string; title: string; description: string }>("landing.classroom.steps");
+  const proofPoints = tList<string>("landing.learning.proofPoints");
+
   return (
     <div className="min-h-screen bg-bg text-foreground font-sans">
       <Navbar
-        brand="Langmeier Dreieck-1x1"
-        links={NAV_LINKS}
-        ctaLabel="Jetzt starten"
+        brand={t("common.brand")}
+        links={navLinks}
+        ctaLabel={t("landing.hero.ctaPrimary")}
         onCtaClick={() => {
           window.location.hash = "#/join";
         }}
+        rightSlot={<LanguageToggle />}
       />
 
       <main className="flex-1">
@@ -79,11 +46,10 @@ export function Landing() {
           <Container size="wide">
             <div className="hero-grid">
               <div className="max-w-xl">
-                <p className="eyebrow">Dreieck-1x1</p>
-                <h1>Multiplikation und Division bis 100 - produktzentriert lernen.</h1>
+                <p className="eyebrow">{t("landing.hero.eyebrow")}</p>
+                <h1>{t("landing.hero.title")}</h1>
                 <p className="mt-6 text-lg text-muted-foreground">
-                  Ein Lernwerkzeug, das Produkte ins Zentrum stellt. Faktorenfamilien erkennen, Dreiecksrelationen
-                  verstehen - fuer nachhaltiges mathematisches Verstaendnis.
+                  {t("landing.hero.subtitle")}
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-4">
                   <Button
@@ -93,7 +59,7 @@ export function Landing() {
                       window.location.hash = "#/join";
                     }}
                   >
-                    Ich bin Lernende
+                    {t("landing.hero.ctaStudent")}
                   </Button>
                   <Button
                     variant="hero-outline"
@@ -102,13 +68,13 @@ export function Landing() {
                       window.location.hash = "#/demo";
                     }}
                   >
-                    Demo ansehen
+                    {t("landing.hero.ctaDemo")}
                   </Button>
                 </div>
                 <p className="mt-6 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-primary/60" aria-hidden="true" />
-                    Kein Login fuer Lernende. Datenschutzfreundlich.
+                    {t("landing.hero.noLogin")}
                   </span>
                 </p>
               </div>
@@ -116,18 +82,18 @@ export function Landing() {
               <div className="flex flex-col items-center lg:items-end gap-6">
                 <Card elevated className="p-6 md:p-8">
                   <div className="text-center mb-4">
-                    <span className="eyebrow">Dreiecks-Interface</span>
+                    <span className="eyebrow">{t("landing.cards.triangleTitle")}</span>
                   </div>
                   <TriangleDisplay product={12} factorA={3} factorB={"?"} missingSlot="factorB" status="idle" />
-                  <div className="mt-4 text-center text-sm text-muted-foreground">12 = 3 x ?</div>
+                  <div className="mt-4 text-center text-sm text-muted-foreground">{t("landing.cards.triangleCaption")}</div>
                 </Card>
 
                 <Card elevated className="p-5">
                   <div className="text-center mb-4">
-                    <span className="eyebrow">Strukturlinse</span>
+                    <span className="eyebrow">{t("landing.cards.structureTitle")}</span>
                   </div>
                   <StructureLensGrid rows={6} cols={4} visible showNumbers gridSize={6} />
-                  <div className="mt-3 text-center text-xs text-muted-foreground">Alle Wege zu 12 sichtbar</div>
+                  <div className="mt-3 text-center text-xs text-muted-foreground">{t("landing.cards.structureCaption")}</div>
                 </Card>
               </div>
             </div>
@@ -137,11 +103,11 @@ export function Landing() {
         <Section id="methode" tone="subtle">
           <Container size="wide">
             <SectionHeading
-              title="Warum es funktioniert"
-              subtitle="Ein didaktisches Konzept, das mathematisches Verstaendnis foerdert."
+              title={t("landing.why.title")}
+              subtitle={t("landing.why.subtitle")}
             />
             <div className="mt-12 grid md:grid-cols-3 gap-6 lg:gap-8">
-              {VALUE_PROPS.map((feature, index) => (
+              {valueProps.map((feature, index) => (
                 <Card key={feature.title} elevated className="p-6 md:p-8 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="icon-badge mb-5">
                     <span className="text-primary font-semibold" aria-hidden="true">{index + 1}</span>
@@ -157,13 +123,13 @@ export function Landing() {
         <Section id="lehrpersonen">
           <Container size="wide">
             <SectionHeading
-              title="Einfach im Unterricht"
-              subtitle="In drei Schritten zur produktiven Uebungseinheit."
+              title={t("landing.classroom.title")}
+              subtitle={t("landing.classroom.subtitle")}
             />
             <div className="relative mt-12">
               <div className="hidden md:block absolute top-16 left-1/6 right-1/6 h-0.5 bg-border" aria-hidden="true" />
               <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-                {STEPS.map((step, index) => (
+                {steps.map((step, index) => (
                   <div
                     key={step.title}
                     className="relative flex flex-col items-center text-center animate-fade-in"
@@ -186,9 +152,9 @@ export function Landing() {
 
         <Section id="lernende" tone="subtle">
           <Container size="narrow">
-            <SectionHeading title="Fuer ruhiges, fokussiertes Lernen" align="center" />
+            <SectionHeading title={t("landing.learning.title")} align="center" />
             <div className="mt-10 grid sm:grid-cols-2 gap-4">
-              {PROOF_POINTS.map((point, index) => (
+              {proofPoints.map((point, index) => (
                 <Card key={point} className="flex items-center gap-4 p-4 bg-background" elevated>
                   <div className="icon-badge-sm">
                     <span className="text-primary font-semibold" aria-hidden="true">{index + 1}</span>
@@ -197,7 +163,7 @@ export function Landing() {
                 </Card>
               ))}
             </div>
-            <p className="text-center mt-8 text-sm text-muted-foreground">Designed in Switzerland - Made for classrooms</p>
+            <p className="text-center mt-8 text-sm text-muted-foreground">{t("landing.learning.tagline")}</p>
           </Container>
         </Section>
 
@@ -205,11 +171,11 @@ export function Landing() {
           <Container size="narrow">
             <Card raised className="p-8 md:p-10">
               <div className="grid gap-6 text-center">
-                <Badge tone="neutral">Bereit fuer den Start?</Badge>
+                <Badge tone="neutral">{t("landing.start.badge")}</Badge>
                 <div className="grid gap-3">
-                  <h2>Starte eine Session in wenigen Sekunden.</h2>
+                  <h2>{t("landing.start.title")}</h2>
                   <p className="text-muted-foreground">
-                    Kein Login fuer Lernende. QR-Code oder kurzer Code reicht.
+                    {t("landing.start.subtitle")}
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -220,7 +186,7 @@ export function Landing() {
                       window.location.hash = "#/join";
                     }}
                   >
-                    Klasse beitreten
+                    {t("landing.start.joinClass")}
                   </Button>
                   <Button
                     variant="outline"
@@ -229,7 +195,7 @@ export function Landing() {
                       window.location.hash = "#/style-guide";
                     }}
                   >
-                    Styleguide ansehen
+                    {t("landing.start.styleGuide")}
                   </Button>
                 </div>
               </div>
@@ -239,11 +205,12 @@ export function Landing() {
       </main>
 
       <Footer
-        brand="Langmeier Dreieck-1x1"
+        brand={t("common.brand")}
+        copyrightText={copyright}
         links={[
-          { label: "Datenschutz", href: "#/datenschutz" },
-          { label: "Impressum", href: "#/impressum" },
-          { label: "Kontakt", href: "#/kontakt" },
+          { label: t("landing.footer.privacy"), href: "#/datenschutz" },
+          { label: t("landing.footer.imprint"), href: "#/impressum" },
+          { label: t("landing.footer.contact"), href: "#/kontakt" },
         ]}
       />
     </div>

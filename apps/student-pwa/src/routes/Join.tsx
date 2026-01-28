@@ -7,14 +7,16 @@ import {
   PRIMARY_DEMO_JOIN_CODE,
   type StoredIdentity,
 } from "../services/joinUseCases";
+import { useI18n } from "../i18n";
+import { LanguageToggle } from "../ui/LanguageToggle";
 
 const MARKERS = [
-  { id: "primary", label: "Blau", swatch: "bg-primary" },
-  { id: "success", label: "Gruen", swatch: "bg-success" },
-  { id: "warning", label: "Orange", swatch: "bg-warning" },
-  { id: "info", label: "Violett", swatch: "bg-info" },
-  { id: "ink", label: "Dunkel", swatch: "bg-foreground" },
-];
+  { id: "primary", swatch: "bg-primary" },
+  { id: "success", swatch: "bg-success" },
+  { id: "warning", swatch: "bg-warning" },
+  { id: "info", swatch: "bg-info" },
+  { id: "ink", swatch: "bg-foreground" },
+] as const;
 
 function readJoinCodeFromUrl(): string | null {
   const url = new URL(window.location.href);
@@ -33,6 +35,9 @@ function readJoinCodeFromUrl(): string | null {
 }
 
 export function Join() {
+  const { t } = useI18n();
+  const year = new Date().getFullYear();
+  const copyright = t("common.copyright", { year, brand: t("common.brand") });
   const [code, setCode] = React.useState("");
   const [identity, setIdentity] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<"idle" | "joining" | "error">("idle");
@@ -76,7 +81,7 @@ export function Join() {
     const sourceCode = typeof overrideCode === "string" ? overrideCode : code;
     const normalized = sourceCode.trim().toUpperCase();
     if (!normalized) {
-      setErrorMessage("Bitte einen Code eingeben.");
+      setErrorMessage(t("join.errors.empty"));
       setStatus("error");
       return;
     }
@@ -90,14 +95,10 @@ export function Join() {
       window.location.hash = "#/practice";
     } catch {
       const offline = typeof navigator !== "undefined" && !navigator.onLine;
-      setErrorMessage(
-        offline
-          ? "Offline. Bitte spaeter erneut versuchen."
-          : "Beitritt nicht moeglich. Code pruefen oder Demo nutzen."
-      );
+      setErrorMessage(offline ? t("join.errors.offline") : t("join.errors.joinFailed"));
       setStatus("error");
     }
-  }, [code, identity]);
+  }, [code, identity, t]);
 
   const onJoinClick = React.useCallback(() => {
     onJoin();
@@ -125,19 +126,20 @@ export function Join() {
     } catch {
       await clearStoredIdentity();
       setStored(null);
-      setErrorMessage("Die Klasse existiert nicht mehr. Bitte neu beitreten.");
+      setErrorMessage(t("join.errors.missingClass"));
       setStatus("error");
     }
-  }, [stored]);
+  }, [stored, t]);
 
   return (
     <div className="min-h-screen bg-bg text-foreground font-sans flex flex-col">
       <Navbar
-        brand="Langmeier Dreieck-1x1"
-        ctaLabel="Info"
+        brand={t("common.brand")}
+        ctaLabel={t("common.info")}
         onCtaClick={() => {
           window.location.hash = "#/landing";
         }}
+        rightSlot={<LanguageToggle />}
       />
 
       <main className="flex-1">
@@ -145,27 +147,27 @@ export function Join() {
           <Container size="narrow">
             <div className="grid gap-8">
               <header className="grid gap-3 text-center">
-                <p className="eyebrow">Dreieck-1x1</p>
-                <h1 className="text-3xl font-semibold text-foreground">Beitreten</h1>
-                <p className="text-sm text-muted-foreground">Kein Login noetig.</p>
+                <p className="eyebrow">{t("landing.hero.eyebrow")}</p>
+                <h1 className="text-3xl font-semibold text-foreground">{t("join.title")}</h1>
+                <p className="text-sm text-muted-foreground">{t("join.subtitle")}</p>
               </header>
 
               <Card raised className="grid gap-6 p-6 md:p-8">
                 {stored ? (
                   <Card className="grid gap-2 bg-background p-4">
-                    <div className="text-sm text-muted-foreground">Letzte Klasse ist gespeichert.</div>
+                    <div className="text-sm text-muted-foreground">{t("join.storedHint")}</div>
                     <Button onClick={onContinue} disabled={status === "joining"}>
-                      Letzte Klasse wieder beitreten
+                      {t("join.storedAction")}
                     </Button>
                   </Card>
                 ) : null}
 
                 <label className="grid gap-2 text-sm text-muted-foreground">
-                  Code
+                  {t("join.codeLabel")}
                   <TextInput
                     value={code}
                     onChange={event => setCode(event.target.value.toUpperCase())}
-                    placeholder="Code eingeben"
+                    placeholder={t("join.codePlaceholder")}
                     autoComplete="off"
                     inputMode="text"
                     maxLength={6}
@@ -173,10 +175,11 @@ export function Join() {
                 </label>
 
                 <div className="grid gap-2">
-                  <div className="text-sm text-muted-foreground">Farbe waehlen (optional)</div>
+                  <div className="text-sm text-muted-foreground">{t("join.colorLabel")}</div>
                   <div className="flex flex-wrap gap-2">
                     {MARKERS.map(marker => {
                       const selected = identity === marker.id;
+                      const labelKey = `join.markers.${marker.id}`;
                       return (
                         <Button
                           key={marker.id}
@@ -188,14 +191,14 @@ export function Join() {
                           onClick={() => setIdentity(prev => (prev === marker.id ? null : marker.id))}
                         >
                           <span className={`h-3 w-3 rounded-full ${marker.swatch}`} aria-hidden="true" />
-                          <span>{marker.label}</span>
+                          <span>{t(labelKey)}</span>
                         </Button>
                       );
                     })}
                   </div>
                 </div>
 
-                {!isOnline ? <div className="text-sm text-warning">Offline. Verbindung fehlt.</div> : null}
+                {!isOnline ? <div className="text-sm text-warning">{t("join.offline")}</div> : null}
                 {errorMessage ? <div className="text-sm text-warning">{errorMessage}</div> : null}
 
                 <Button
@@ -204,7 +207,7 @@ export function Join() {
                   size="lg"
                   className="w-full"
                 >
-                  {status === "joining" ? "Verbinden..." : "Beitreten"}
+                  {status === "joining" ? t("join.action.joining") : t("join.action.join")}
                 </Button>
               </Card>
             </div>
@@ -212,7 +215,7 @@ export function Join() {
         </Section>
       </main>
 
-      <Footer brand="Langmeier Dreieck-1x1" />
+      <Footer brand={t("common.brand")} copyrightText={copyright} />
     </div>
   );
 }

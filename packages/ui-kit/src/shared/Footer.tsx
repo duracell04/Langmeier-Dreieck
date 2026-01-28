@@ -10,10 +10,13 @@ export interface FooterLink {
 export interface FooterProps extends React.HTMLAttributes<HTMLElement> {
   brand: string;
   links?: FooterLink[];
+  copyrightText?: string;
 }
 
-export function Footer({ brand, links = [], className, ...props }: FooterProps) {
+export function Footer({ brand, links = [], copyrightText, className, ...props }: FooterProps) {
   const currentYear = new Date().getFullYear();
+  const fallbackCopyright = `Copyright ${currentYear} ${brand}. Alle Rechte vorbehalten.`;
+  const copyright = copyrightText ?? fallbackCopyright;
 
   return (
     <footer className={cn("border-t border-border/40 bg-secondary/20", className)} {...props}>
@@ -38,7 +41,7 @@ export function Footer({ brand, links = [], className, ...props }: FooterProps) 
           </nav>
         </div>
         <div className="mt-8 pt-6 border-t border-border/30">
-          <p className="text-xs text-muted-foreground">Copyright {currentYear} {brand}. Alle Rechte vorbehalten.</p>
+          <p className="text-xs text-muted-foreground">{copyright}</p>
         </div>
       </div>
     </footer>
