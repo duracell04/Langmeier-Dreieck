@@ -7,6 +7,8 @@ export interface PracticeSession {
   packId: string;
   mode: "learn" | "test";
   setId: string;
+  productSets?: string[];
+  speed?: "slow" | "fast";
   startedAt: number;
   lastActiveAt: number;
   rngSeed: number;

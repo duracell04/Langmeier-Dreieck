@@ -1,4 +1,4 @@
-﻿// packages/core-engine/src/session/sessionManager.ts
+// packages/core-engine/src/session/sessionManager.ts
 export interface PracticeSession {
   sessionId: string;
   studentRef: string;
@@ -6,6 +6,8 @@ export interface PracticeSession {
   packId: string;
   mode: "learn" | "test";
   setId: string;
+  productSets?: string[];
+  speed?: "slow" | "fast";
   startedAt: number;
   lastActiveAt: number;
   // optional: seed to reproduce "next N tasks" after crash

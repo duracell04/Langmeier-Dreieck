@@ -29,6 +29,9 @@ importers:
       '@triangle/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@triangle/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@triangle/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit
@@ -69,6 +72,9 @@ importers:
       '@triangle/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@triangle/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@triangle/ui-kit':
         specifier: workspace:*
         version: link:../../packages/ui-kit

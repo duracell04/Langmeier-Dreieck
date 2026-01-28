@@ -13,7 +13,7 @@ import {
 } from "@triangle/ui-kit";
 import {
   SessionManager,
-  buildCoreFamilies,
+  buildFamiliesForProductSets,
   buildLearnPlan,
   createSeedFromTime,
   createSeededRng,
@@ -35,21 +35,30 @@ import type {
   TaskEndEvent,
   TaskEndMissingSlot,
   LockedRole,
+  ProductSetId,
 } from "@triangle/types";
 import {
   IdbSessionStorage,
+  getPracticeConfig,
   getClassConfig,
   getClassId,
   getDeviceId,
   getStudentRef,
+  queryEvents,
   type ClassConfig,
+  type PracticeConfig,
 } from "@triangle/storage";
 import { createBaseEvent, recordEvent, syncPendingEvents, type EventContext } from "../services/practiceUseCases";
+import { sortProductSets } from "../services/productSets";
 import { useI18n } from "../i18n";
 import { LanguageToggle } from "../ui/LanguageToggle";
 
 const SUCCESS_DWELL_MS = 700;
 const REVEAL_DWELL_MS = 1600;
+const SPEED_DWELL_MS = {
+  slow: { success: 900, reveal: 1800 },
+  fast: { success: 500, reveal: 1400 },
+} as const;
 const REQUEUE_POLICY: RequeuePolicy = {
   minSpacing: 6,
   swapSpacing: 2,
@@ -66,6 +75,11 @@ const DEFAULT_CLASS_CONFIG: ClassConfig = {
   sessionLength: 25,
   divisionEnabled: true,
   squareMode: "default",
+};
+const DEFAULT_PRACTICE_CONFIG: PracticeConfig = {
+  mode: DEFAULT_CLASS_CONFIG.defaultMode,
+  productSets: DEFAULT_CLASS_CONFIG.productSets as ProductSetId[],
+  speed: "slow",
 };
 
 type Phase = "solve" | "wrong1" | "structure" | "success" | "reveal";
@@ -101,15 +115,17 @@ function formatSlot(value: number, isMissing: boolean, input: string, reveal: bo
 
 export function Practice() {
   const { t } = useI18n();
-  const families = React.useMemo(() => buildCoreFamilies(), []);
   const sessionManager = React.useMemo(() => new SessionManager(new IdbSessionStorage()), []);
 
   const [sessionReady, setSessionReady] = React.useState(false);
   const [sessionId, setSessionId] = React.useState<string | null>(null);
   const [rngSeed, setRngSeed] = React.useState<number>(1);
   const [classConfig, setClassConfig] = React.useState<ClassConfig | null>(null);
+  const [practiceConfig, setPracticeConfigState] = React.useState<PracticeConfig | null>(null);
   const [configReady, setConfigReady] = React.useState(false);
   const [sessionMode, setSessionMode] = React.useState<"learn" | "test">(DEFAULT_CLASS_CONFIG.defaultMode);
+  const [selectedSets, setSelectedSets] = React.useState<ProductSetId[]>(DEFAULT_PRACTICE_CONFIG.productSets);
+  const [speed, setSpeed] = React.useState<PracticeConfig["speed"]>(DEFAULT_PRACTICE_CONFIG.speed);
 
   const activeConfig = classConfig ?? DEFAULT_CLASS_CONFIG;
   const sessionTotal = activeConfig.sessionLength;
@@ -117,7 +133,8 @@ export function Practice() {
   const divisionEnabled = activeConfig.divisionEnabled;
   const mode = sessionMode;
   const packId = activeConfig.packId;
-  const setId = activeConfig.packId;
+
+  const families = React.useMemo(() => buildFamiliesForProductSets(selectedSets), [selectedSets]);
 
   const rng = React.useMemo(() => createSeededRng(rngSeed), [rngSeed]);
   const learnPlan = React.useMemo(
@@ -146,6 +163,7 @@ export function Practice() {
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
   const [elapsedMs, setElapsedMs] = React.useState(0);
   const [syncStatus, setSyncStatus] = React.useState<"idle" | "syncing" | "error" | "ok">("idle");
+  const [correctCount, setCorrectCount] = React.useState(0);
 
   const timers = React.useRef<number[]>([]);
   const syncTimer = React.useRef<number | null>(null);
@@ -216,9 +234,10 @@ export function Practice() {
 
   React.useEffect(() => {
     let active = true;
-    getClassConfig().then(config => {
+    Promise.all([getClassConfig(), getPracticeConfig()]).then(([config, practice]) => {
       if (!active) return;
       setClassConfig(config ?? DEFAULT_CLASS_CONFIG);
+      setPracticeConfigState(practice);
       setConfigReady(true);
     });
     return () => {
@@ -230,6 +249,12 @@ export function Practice() {
     let active = true;
     (async () => {
       if (!configReady) return;
+      const baseConfig = classConfig ?? DEFAULT_CLASS_CONFIG;
+      const basePractice = practiceConfig ?? DEFAULT_PRACTICE_CONFIG;
+      const fallbackMode = basePractice.mode ?? baseConfig.defaultMode;
+      const fallbackSets = basePractice.productSets.length ? basePractice.productSets : baseConfig.productSets;
+      const orderedFallbackSets = sortProductSets(fallbackSets as ProductSetId[]);
+      const fallbackSpeed = basePractice.speed ?? DEFAULT_PRACTICE_CONFIG.speed;
       const [deviceId, studentRef, classId] = await Promise.all([
         getDeviceId(),
         getStudentRef(),
@@ -249,8 +274,10 @@ export function Practice() {
           studentRef,
           classId: classId ?? undefined,
           packId,
-          mode: activeConfig.defaultMode,
-          setId,
+          mode: fallbackMode,
+          setId: orderedFallbackSets.join("+"),
+          productSets: orderedFallbackSets,
+          speed: fallbackSpeed,
           startedAt: Date.now(),
           rngSeed: createSeedFromTime(),
         });
@@ -269,6 +296,24 @@ export function Practice() {
       setSessionId(session.sessionId);
       setRngSeed(session.rngSeed);
       setSessionMode(session.mode);
+      if (session.productSets && session.productSets.length) {
+        setSelectedSets(sortProductSets(session.productSets as ProductSetId[]));
+      } else {
+        setSelectedSets(orderedFallbackSets as ProductSetId[]);
+      }
+      setSpeed(session.speed ?? fallbackSpeed);
+      if (recovered) {
+        const events = await queryEvents({ studentRef, sessionId: session.sessionId });
+        const taskEnds = events.filter((event): event is TaskEndEvent => event.type === "task_end");
+        const correct = taskEnds.filter(event => event.result === "correct").length;
+        sessionItemsRef.current = taskEnds.length;
+        sessionCorrectRef.current = correct;
+        setCorrectCount(correct);
+      } else {
+        sessionItemsRef.current = 0;
+        sessionCorrectRef.current = 0;
+        setCorrectCount(0);
+      }
       sessionStartedAtRef.current = session.startedAt;
       setSessionReady(true);
 
@@ -288,7 +333,7 @@ export function Practice() {
     return () => {
       active = false;
     };
-  }, [activeConfig.defaultMode, configReady, packId, scheduleSync, sessionManager, setId]);
+  }, [classConfig, configReady, packId, practiceConfig, scheduleSync, sessionManager]);
 
   const nextTask = React.useCallback(
     (nextIndex: number) => {
@@ -479,20 +524,24 @@ export function Practice() {
     [scheduleSync]
   );
 
+  const successDwellMs = mode === "test" ? SPEED_DWELL_MS[speed].success : SUCCESS_DWELL_MS;
+  const revealDwellMs = mode === "test" ? SPEED_DWELL_MS[speed].reveal : REVEAL_DWELL_MS;
+
   const handleCorrect = React.useCallback(() => {
     if (!task) return;
     setPhase("success");
     emitTaskEnd(task, "correct", attemptsBeforeEnd, structureUsed);
     sessionItemsRef.current += 1;
     sessionCorrectRef.current += 1;
+    setCorrectCount(sessionCorrectRef.current);
     if (sessionItemsRef.current >= sessionTotal) {
       schedule(() => {
         window.location.hash = "#/results";
-      }, SUCCESS_DWELL_MS);
+      }, successDwellMs);
       return;
     }
-    schedule(goNext, SUCCESS_DWELL_MS);
-  }, [attemptsBeforeEnd, emitTaskEnd, goNext, schedule, sessionTotal, structureUsed, task]);
+    schedule(goNext, successDwellMs);
+  }, [attemptsBeforeEnd, emitTaskEnd, goNext, schedule, sessionTotal, structureUsed, successDwellMs, task]);
 
   const handleFirstWrong = React.useCallback(() => {
     setAttemptsBeforeEnd(1);
@@ -528,11 +577,11 @@ export function Practice() {
     if (sessionItemsRef.current >= sessionTotal) {
       schedule(() => {
         window.location.hash = "#/results";
-      }, REVEAL_DWELL_MS);
+      }, revealDwellMs);
       return;
     }
-    schedule(goNext, REVEAL_DWELL_MS);
-  }, [emitTaskEnd, goNext, schedule, sessionTotal, task]);
+    schedule(goNext, revealDwellMs);
+  }, [emitTaskEnd, goNext, revealDwellMs, schedule, sessionTotal, task]);
 
   const submit = React.useCallback(() => {
     if (!task) return;
@@ -681,14 +730,30 @@ export function Practice() {
   const keypadDisabled = phase === "success" || phase === "reveal";
   const feedbackState: FeedbackState = phase === "solve" ? "solve" : phase;
 
-  const divisorValue = task.missing === "left" ? rightValue : leftValue;
+  const equationMissing = reveal ? correct : "?";
+  const equationLeft =
+    task.operation === "mul" ? (task.missing === "left" ? equationMissing : leftValue) : productValue;
+  const equationRight =
+    task.operation === "mul"
+      ? (task.missing === "right" ? equationMissing : rightValue)
+      : task.missing === "left"
+        ? rightValue
+        : leftValue;
+  const equationResult =
+    task.operation === "mul"
+      ? task.missing === "product"
+        ? equationMissing
+        : productValue
+      : equationMissing;
+  const equationSymbol = task.operation === "mul" ? "\u00D7" : ":";
 
   return (
     <PracticeFrame
       header={
         <>
-          <div className="text-xs text-muted-foreground">
-            {progress}/{sessionTotal}
+          <div className="grid gap-1 text-xs text-muted-foreground">
+            <span>{t("practice.progress", { current: progress, total: sessionTotal })}</span>
+            <span>{t("practice.correctCount", { count: correctCount })}</span>
           </div>
           {mode === "test" ? <div className="text-xs text-muted-foreground">{elapsedLabel}</div> : null}
           <div className="flex items-center gap-2">
@@ -727,17 +792,21 @@ export function Practice() {
           status={triangleStatus}
         />
 
-        {task.operation === "div" ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="tabular-nums text-ink">{productValue}</span>
-            <span>:</span>
-            <span className="rounded-lg border border-dashed border-border/60 bg-card px-2 py-1 text-muted-foreground tabular-nums">
-              {divisorValue}
-            </span>
-            <span>=</span>
-            <span className="tabular-nums text-ink">{reveal ? correct : "?"}</span>
-          </div>
-        ) : null}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="tabular-nums text-ink">{equationLeft}</span>
+          <span>{equationSymbol}</span>
+          <span
+            className={
+              task.operation === "div"
+                ? "rounded-lg border border-dashed border-border/60 bg-card px-2 py-1 text-muted-foreground tabular-nums"
+                : "tabular-nums text-ink"
+            }
+          >
+            {equationRight}
+          </span>
+          <span>=</span>
+          <span className="tabular-nums text-ink">{equationResult}</span>
+        </div>
 
         <FeedbackLadder state={feedbackState} message={feedbackMessage} detail={feedbackDetail} />
 

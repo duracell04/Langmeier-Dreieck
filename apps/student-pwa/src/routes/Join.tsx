@@ -92,7 +92,7 @@ export function Join() {
     setErrorMessage(null);
     try {
       await joinClass(normalized, identity);
-      window.location.hash = "#/practice";
+      window.location.hash = "#/select";
     } catch {
       const offline = typeof navigator !== "undefined" && !navigator.onLine;
       setErrorMessage(offline ? t("join.errors.offline") : t("join.errors.joinFailed"));
@@ -115,14 +115,14 @@ export function Join() {
   const onContinue = React.useCallback(async () => {
     if (!stored) return;
     if (!navigator.onLine) {
-      window.location.hash = "#/practice";
+      window.location.hash = "#/select";
       return;
     }
     setStatus("joining");
     setErrorMessage(null);
     try {
       await joinClass(stored.joinCode, stored.identityMarker);
-      window.location.hash = "#/practice";
+      window.location.hash = "#/select";
     } catch {
       await clearStoredIdentity();
       setStored(null);

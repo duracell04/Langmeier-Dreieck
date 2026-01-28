@@ -4,6 +4,7 @@ import { Join } from "./routes/Join";
 import { Landing } from "./routes/Landing";
 import { Practice } from "./routes/Practice";
 import { Results } from "./routes/Results";
+import { Select } from "./routes/Select";
 import { StyleGuide } from "./routes/StyleGuide";
 import { I18nProvider } from "./i18n";
 import "./styles/app.css";
@@ -23,6 +24,8 @@ function renderRoute() {
       ? <StyleGuide />
     : hash.startsWith("#/results")
       ? <Results />
+    : hash.startsWith("#/select")
+      ? <Select />
     : hash.startsWith("#/practice")
       ? <Practice />
       : hash.startsWith("#/join") || hash.startsWith("#/demo")

@@ -76,7 +76,7 @@ export function Results() {
   }, []);
 
   const onRetry = () => {
-    window.location.hash = "#/practice";
+    window.location.hash = "#/select";
   };
 
   const onHome = () => {
@@ -88,12 +88,12 @@ export function Results() {
     setStatus("joining");
     setErrorMessage(null);
     if (!navigator.onLine) {
-      window.location.hash = "#/practice";
+      window.location.hash = "#/select";
       return;
     }
     try {
       await joinClass(stored.joinCode, stored.identityMarker);
-      window.location.hash = "#/practice";
+      window.location.hash = "#/select";
     } catch {
       setStatus("error");
       setErrorMessage(t("results.errors.joinFailed"));

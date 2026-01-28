@@ -11,6 +11,7 @@
     "@supabase/supabase-js": "^2.45.4",
     "@triangle/theme": "workspace:*",
     "@triangle/ui-kit": "workspace:*",
+    "@triangle/types": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

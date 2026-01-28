@@ -7,8 +7,7 @@ import {
   DataTable,
 } from "@triangle/ui-kit";
 import { supabase } from "./services/supabaseClient";
-
-type ProductSetId = "products_3_4" | "products_2" | "squares" | "cardinals" | "all_products";
+import type { ProductSetId } from "@triangle/types";
 
 interface ClassRow {
   id: string;

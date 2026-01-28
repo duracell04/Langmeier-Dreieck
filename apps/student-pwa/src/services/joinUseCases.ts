@@ -16,6 +16,7 @@ import {
   setClassConfig,
   type ClassConfig,
 } from "@triangle/storage";
+import type { ProductSetId } from "@triangle/types";
 
 export interface JoinClassResult {
   classId: string;
@@ -45,6 +46,13 @@ const DEFAULT_CLASS_CONFIG: ClassConfig = {
   divisionEnabled: true,
   squareMode: "default",
 };
+const PRODUCT_SET_ID_SET = new Set<ProductSetId>([
+  "products_3_4",
+  "products_2",
+  "squares",
+  "cardinals",
+  "all_products",
+]);
 
 function parseClassConfig(input: unknown): ClassConfig | null {
   if (!input || typeof input !== "object") return null;
@@ -56,7 +64,11 @@ function parseClassConfig(input: unknown): ClassConfig | null {
   if (typeof item.packId !== "string") return null;
   if (!Array.isArray(item.productSets)) return null;
   if (typeof item.divisionEnabled !== "boolean") return null;
-  return item;
+  const productSets = item.productSets.filter(
+    (entry): entry is ProductSetId => typeof entry === "string" && PRODUCT_SET_ID_SET.has(entry as ProductSetId)
+  );
+  if (productSets.length === 0) return null;
+  return { ...item, productSets };
 }
 
 export async function loadStoredIdentity(): Promise<StoredIdentity | null> {

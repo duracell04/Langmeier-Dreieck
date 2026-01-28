@@ -1,8 +1,20 @@
-﻿const DB_NAME = "triangle1x1";
+import type { ProductSetId } from "@triangle/types";
+
+const DB_NAME = "triangle1x1";
 const DB_VERSION = 1;
 
 const STORE_META = "meta";
 const STORE_EVENTS = "events";
+
+const PRODUCT_SET_IDS: ProductSetId[] = [
+  "products_3_4",
+  "products_2",
+  "squares",
+  "cardinals",
+  "all_products",
+];
+
+const PRODUCT_SET_ID_SET = new Set(PRODUCT_SET_IDS);
 
 export type MetaKey =
   | "deviceId"
@@ -15,15 +27,24 @@ export type MetaKey =
   | "activeSession"
   | "joinCode"
   | "identityMarker"
-  | "classConfig";
+  | "classConfig"
+  | "practiceConfig";
 
 export interface ClassConfig {
   packId: string;
   defaultMode: "learn" | "test";
-  productSets: string[];
+  productSets: ProductSetId[];
   sessionLength: 10 | 25 | 40;
   divisionEnabled: boolean;
   squareMode: "default" | "single";
+}
+
+export type PracticeSpeed = "slow" | "fast";
+
+export interface PracticeConfig {
+  mode: "learn" | "test";
+  productSets: ProductSetId[];
+  speed: PracticeSpeed;
 }
 
 interface MetaRecord {
@@ -137,6 +158,11 @@ export async function setPackId(value: string | null): Promise<void> {
   return setMeta("packId", value);
 }
 
+function isValidProductSets(values: unknown): values is ProductSetId[] {
+  if (!Array.isArray(values)) return false;
+  return values.every(item => typeof item === "string" && PRODUCT_SET_ID_SET.has(item as ProductSetId));
+}
+
 function isClassConfig(value: unknown): value is ClassConfig {
   if (!value || typeof value !== "object") return false;
   const item = value as ClassConfig;
@@ -146,7 +172,7 @@ function isClassConfig(value: unknown): value is ClassConfig {
   return (
     typeof item.packId === "string" &&
     validMode &&
-    Array.isArray(item.productSets) &&
+    isValidProductSets(item.productSets) &&
     validSessionLength &&
     typeof item.divisionEnabled === "boolean" &&
     validSquare
@@ -167,6 +193,30 @@ export async function getClassConfig(): Promise<ClassConfig | null> {
 export async function setClassConfig(value: ClassConfig | null): Promise<void> {
   if (!value) return setMeta("classConfig", null);
   return setMeta("classConfig", JSON.stringify(value));
+}
+
+function isPracticeConfig(value: unknown): value is PracticeConfig {
+  if (!value || typeof value !== "object") return false;
+  const item = value as PracticeConfig;
+  const validMode = item.mode === "learn" || item.mode === "test";
+  const validSpeed = item.speed === "slow" || item.speed === "fast";
+  return validMode && validSpeed && isValidProductSets(item.productSets);
+}
+
+export async function getPracticeConfig(): Promise<PracticeConfig | null> {
+  const raw = await getMeta("practiceConfig");
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return isPracticeConfig(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setPracticeConfig(value: PracticeConfig | null): Promise<void> {
+  if (!value) return setMeta("practiceConfig", null);
+  return setMeta("practiceConfig", JSON.stringify(value));
 }
 
 export async function getLastAckTs(): Promise<number | null> {
