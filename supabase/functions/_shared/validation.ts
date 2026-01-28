@@ -83,7 +83,7 @@ export const StudentEventSchema = z.discriminatedUnion("type", [
     familyProduct: z.number().int().nonnegative(),
     op: z.enum(["mul", "div"]),
     missing: z.enum(["product", "factorLeft", "factorRight"]),
-    lockedRole: z.enum(["none", "divisorLeft", "divisorRight", "quotientLeft", "quotientRight"]),
+    lockedRole: z.enum(["none", "divisorLeft", "divisorRight"]),
     attemptsBeforeEnd: z.union([z.literal(0), z.literal(1), z.literal(2)]),
     usedStructureLens: z.boolean(),
     msToEnd: z.number().int().nonnegative(),
