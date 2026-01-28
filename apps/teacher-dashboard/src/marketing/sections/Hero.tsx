@@ -31,7 +31,7 @@ export function Hero({
               style={{ animationDelay: "0.1s" }}
             >
               Ein Lernwerkzeug, das Produkte ins Zentrum stellt. Faktorenfamilien erkennen, Dreiecksrelationen
-              verstehen - fuer nachhaltiges mathematisches Verstaendnis.
+              verstehen - für nachhaltiges mathematisches Verständnis.
             </p>
             <div
               className="mt-8 flex flex-col sm:flex-row gap-4 animate-fade-in"
@@ -41,13 +41,13 @@ export function Hero({
                 Ich bin Lehrperson
               </Button>
               <Button variant="hero-outline" size="xl" onClick={onStudentClick}>
-                Ich bin Schuelerin oder Schueler
+                Ich bin Schülerin oder Schüler
               </Button>
             </div>
             <p className="mt-6 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: "0.3s" }}>
               <span className="inline-flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-primary/60" aria-hidden="true" />
-                Kein Login fuer Schuelerinnen und Schueler. Datenschutzfreundlich.
+                Kein Login für Schülerinnen und Schüler. Datenschutzfreundlich.
               </span>
             </p>
           </div>

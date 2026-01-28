@@ -31,7 +31,7 @@ export function Keypad({ onKey, disabled = false, className }: KeypadProps) {
         const isAction = key === "backspace" || key === "enter";
         const label = key === "backspace" ? "Del" : key === "enter" ? "OK" : key;
         const ariaLabel =
-          key === "backspace" ? "Loeschen" : key === "enter" ? "Bestaetigen" : `Zahl ${key}`;
+          key === "backspace" ? "Löschen" : key === "enter" ? "Bestätigen" : `Zahl ${key}`;
 
         return (
           <button

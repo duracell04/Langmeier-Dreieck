@@ -5,7 +5,7 @@ export const messages = {
       appTitle: "Dreieck 1x1",
       home: "Home",
       info: "Info",
-      back: "Zurueck",
+      back: "Zurück",
       copyright: "Copyright {year} {brand}. Alle Rechte vorbehalten.",
     },
     landing: {
@@ -136,7 +136,7 @@ export const messages = {
       },
       selection: {
         eyebrow: "Dreieck-1x1",
-        title: "Waehle deine Uebung",
+        title: "Wähle deine Übung",
         subtitle: "Modus und Sets festlegen, dann starten.",
         modeLabel: "Modus",
         modeLearn: "Lernen (L)",

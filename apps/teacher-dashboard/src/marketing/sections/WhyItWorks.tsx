@@ -57,7 +57,7 @@ export function WhyItWorks() {
       <Container size="wide">
         <SectionHeading
           title="Warum es funktioniert"
-          subtitle="Ein didaktisches Konzept, das mathematisches Verstaendnis foerdert."
+          subtitle="Ein didaktisches Konzept, das mathematisches Verständnis fördert."
         />
         <div className="mt-12 grid md:grid-cols-3 gap-6 lg:gap-8">
           {FEATURES.map((feature, index) => (

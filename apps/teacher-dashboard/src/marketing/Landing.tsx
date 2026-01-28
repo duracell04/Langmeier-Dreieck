@@ -9,8 +9,8 @@ import { navigateToLanding, navigateToTeacherDashboard, scrollToId } from "./uti
 
 const NAV_SECTIONS = [
   { id: "methode", label: "Methode" },
-  { id: "lehrpersonen", label: "Fuer Lehrpersonen" },
-  { id: "schueler", label: "Fuer Schuelerinnen und Schueler" },
+  { id: "lehrpersonen", label: "Für Lehrpersonen" },
+  { id: "schueler", label: "Für Schülerinnen und Schüler" },
   { id: "preise", label: "Preise" },
 ];
 

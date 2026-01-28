@@ -17,7 +17,7 @@ export function PaywallModal({ open, onClose, onUnlock }: PaywallModalProps) {
           <div className="text-micro uppercase tracking-wide text-muted">Pro-Funktion</div>
           <h2 className="text-2xl font-semibold text-ink">Demoversion freischalten</h2>
           <p className="text-sm text-muted">
-            Dies ist ein Platzhalter fuer die spaetere Zahlungsintegration. Kein echtes Bezahlen noetig.
+            Dies ist ein Platzhalter für die spätere Zahlungsintegration. Kein echtes Bezahlen nötig.
           </p>
           <div className="grid gap-2">
             <Button onClick={onUnlock}>Freischalten (Demo)</Button>

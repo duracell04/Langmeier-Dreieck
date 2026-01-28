@@ -125,9 +125,9 @@ export function Navbar({
             type="button"
             className="p-2 -mr-2 text-muted-foreground hover:text-foreground focus-ring rounded-md"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? "Menu schliessen" : "Menu oeffnen"}
+            aria-label={mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
           >
-            <span className="sr-only">Menu</span>
+            <span className="sr-only">Menü</span>
             <span className="relative block h-5 w-6">
               <span
                 className={cn(

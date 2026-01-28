@@ -186,7 +186,7 @@ export function App() {
     const perStudentRows = [...perStudent.entries()]
       .map(([studentRef, stats]) => {
         const number = studentMap.get(studentRef);
-        const label = number ? `Schueler ${number}` : "Schueler ?";
+        const label = number ? `Schüler ${number}` : "Schüler ?";
         return {
           studentLabel: label,
           total: stats.total,
@@ -227,7 +227,7 @@ export function App() {
 
     const { error } = await action;
     if (error) {
-      setAuthError("Anmeldung nicht moeglich. Bitte pruefen.");
+      setAuthError("Anmeldung nicht möglich. Bitte prüfen.");
     }
     setAuthLoading(false);
   };
@@ -240,7 +240,7 @@ export function App() {
       return;
     }
     if (productSets.length === 0) {
-      setClassError("Mindestens ein Produktset waehlen.");
+      setClassError("Mindestens ein Produktset wählen.");
       return;
     }
 
@@ -311,7 +311,7 @@ export function App() {
           <header className="grid gap-2 text-center">
             <p className="text-micro uppercase tracking-wide text-muted">Dreieck-1x1</p>
             <h1 className="text-3xl font-semibold text-ink">Lehrperson Login</h1>
-            <p className="text-sm text-muted">Nur fuer Lehrpersonen.</p>
+            <p className="text-sm text-muted">Nur für Lehrpersonen.</p>
           </header>
 
           <Card className="grid gap-4">
@@ -375,7 +375,7 @@ export function App() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="grid gap-1">
             <p className="text-micro uppercase tracking-wide text-muted">Dreieck-1x1</p>
-            <h1 className="text-3xl font-semibold text-ink">Uebersicht</h1>
+            <h1 className="text-3xl font-semibold text-ink">Übersicht</h1>
             <div className="text-sm text-muted">{session.user.email}</div>
           </div>
           <div className="flex gap-2">
@@ -414,7 +414,7 @@ export function App() {
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm text-muted">
-                  Sitzungslaenge
+                  Sitzungslänge
                   <select
                     className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-ink"
                     value={sessionLength}
@@ -475,7 +475,7 @@ export function App() {
                     onChange={event => setSquareMode(event.target.value as "default" | "single")}
                   >
                     <option value="default">Standard</option>
-                    <option value="single">Ein Feld fuer beide Faktoren</option>
+                    <option value="single">Ein Feld für beide Faktoren</option>
                   </select>
                 </label>
               </div>
@@ -528,7 +528,7 @@ export function App() {
                 </div>
               </>
             ) : (
-              <div className="text-sm text-muted">Keine Klasse gewaehlt.</div>
+              <div className="text-sm text-muted">Keine Klasse gewählt.</div>
             )}
           </Card>
         </DashboardSection>
@@ -559,7 +559,7 @@ export function App() {
             {activeClass ? (
               <div className="text-sm text-muted">Klasse: {activeClass.name}</div>
             ) : (
-              <div className="text-sm text-muted">Keine Klasse gewaehlt.</div>
+              <div className="text-sm text-muted">Keine Klasse gewählt.</div>
             )}
             <DataTable
               columns={[
@@ -577,11 +577,11 @@ export function App() {
           </Card>
         </DashboardSection>
 
-        <DashboardSection title="Schuelerinnen und Schueler">
+        <DashboardSection title="Schülerinnen und Schüler">
           <Card elevated className="grid gap-4">
             <DataTable
               columns={[
-                { key: "studentLabel", label: "Schueler" },
+                { key: "studentLabel", label: "Schüler" },
                 { key: "accuracy", label: "Genauigkeit", align: "right" },
                 { key: "reveals", label: "Aufgedeckt", align: "right" },
                 { key: "total", label: "Versuche", align: "right" },

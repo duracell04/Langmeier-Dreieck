@@ -5,15 +5,15 @@ import { navigateToStudentJoin, navigateToTeacherDashboard } from "../utils";
 const PLANS = [
   {
     name: "Einzel",
-    description: "Fuer einzelne Lehrpersonen",
-    features: ["Unbegrenzte Sessions", "Bis zu 30 Schuelerinnen", "Fortschrittsuebersicht", "Export-Funktionen"],
+    description: "Für einzelne Lehrpersonen",
+    features: ["Unbegrenzte Sessions", "Bis zu 30 Schülerinnen", "Fortschrittsübersicht", "Export-Funktionen"],
     cta: "Mehr erfahren",
     highlighted: false,
   },
   {
     name: "Schule",
-    description: "Fuer Teams und Schulen",
-    features: ["Alles aus Einzel", "Unbegrenzte Lehrpersonen", "Schulweite Verwaltung", "Prioritaets-Support"],
+    description: "Für Teams und Schulen",
+    features: ["Alles aus Einzel", "Unbegrenzte Lehrpersonen", "Schulweite Verwaltung", "Prioritäts-Support"],
     cta: "Kontakt aufnehmen",
     highlighted: true,
   },
@@ -31,11 +31,11 @@ export function PricingCta({
   return (
     <Card raised className="p-8 md:p-10 mt-10" id="kontakt">
       <div className="grid gap-6 text-center">
-        <Badge tone="neutral">Bereit fuer den Start?</Badge>
+        <Badge tone="neutral">Bereit für den Start?</Badge>
         <div className="grid gap-3">
           <h2>Starte eine Session in wenigen Sekunden.</h2>
           <p className="text-muted-foreground">
-            Kein Login fuer Schuelerinnen und Schueler. QR-Code oder kurzer Code reicht.
+            Kein Login für Schülerinnen und Schüler. QR-Code oder kurzer Code reicht.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -43,7 +43,7 @@ export function PricingCta({
             Lehrperson starten
           </Button>
           <Button variant="outline" size="lg" onClick={onStudentClick}>
-            Schuelerinnen beitreten
+            Schülerinnen beitreten
           </Button>
         </div>
       </div>
@@ -55,7 +55,7 @@ export function Pricing() {
   return (
     <Section id="preise">
       <Container size="narrow">
-        <SectionHeading title="Preise" subtitle="Flexible Optionen fuer jede Situation." />
+        <SectionHeading title="Preise" subtitle="Flexible Optionen für jede Situation." />
         <div className="mt-12 grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {PLANS.map((plan, index) => (
             <Card

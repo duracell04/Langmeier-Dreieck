@@ -2,17 +2,17 @@ import { Card, Container, Section, SectionHeading } from "@triangle/ui-kit";
 import { CheckIcon } from "./icons";
 
 const PROOF_POINTS = [
-  "Offline-faehig nach dem ersten Laden",
-  "Keine Schuelerinnen-Accounts noetig",
-  "Ruhige, ermutigende Rueckmeldungen",
-  "Lehrperson behaelt die Kontrolle",
+  "Offline-fähig nach dem ersten Laden",
+  "Keine Schülerinnen-Accounts nötig",
+  "Ruhige, ermutigende Rückmeldungen",
+  "Lehrperson behält die Kontrolle",
 ];
 
 export function Credibility() {
   return (
     <Section id="schueler" tone="subtle">
       <Container size="narrow">
-        <SectionHeading title="Fuer ruhiges, fokussiertes Lernen" />
+        <SectionHeading title="Für ruhiges, fokussiertes Lernen" />
         <div className="mt-10 grid sm:grid-cols-2 gap-4">
           {PROOF_POINTS.map((point, index) => (
             <Card

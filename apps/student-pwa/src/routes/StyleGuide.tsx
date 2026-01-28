@@ -50,16 +50,16 @@ export function StyleGuide() {
       <main className="flex-1">
         <Section id="typografie">
           <Container size="wide">
-            <SectionHeading title="Typografie" subtitle="Skalierung fuer Titel, Text und Hilfetexte." align="left" />
+            <SectionHeading title="Typografie" subtitle="Skalierung für Titel, Text und Hilfetexte." align="left" />
             <div className="mt-8 grid gap-4">
               <h1>Display Headline</h1>
               <h2>Zweiter Titel</h2>
               <h3>Dritter Titel</h3>
               <h4>Vierter Titel</h4>
               <p className="text-base text-muted-foreground">
-                Fliesstext mit ruhiger Zeilenhoehe fuer gute Lesbarkeit auf Tablets.
+                Fließtext mit ruhiger Zeilenhöhe für gute Lesbarkeit auf Tablets.
               </p>
-              <p className="text-sm text-muted-foreground">Sekundaerer Text fuer Hinweise.</p>
+              <p className="text-sm text-muted-foreground">Sekundärer Text für Hinweise.</p>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Microcopy</p>
             </div>
           </Container>
@@ -67,7 +67,7 @@ export function StyleGuide() {
 
         <Section id="buttons" tone="subtle">
           <Container size="wide">
-            <SectionHeading title="Buttons" subtitle="Primaer, sekundaer, outline und hero Varianten." align="left" />
+            <SectionHeading title="Buttons" subtitle="Primär, sekundär, outline und hero Varianten." align="left" />
             <div className="mt-8 grid gap-6">
               <div className="flex flex-wrap gap-3">
                 <Button>Primary</Button>

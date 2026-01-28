@@ -6,19 +6,19 @@ const STEPS = [
     Icon: PlusIcon,
     step: "1",
     title: "Session erstellen",
-    description: "In wenigen Klicks eine Uebungssession mit passenden Produktbereichen konfigurieren.",
+    description: "In wenigen Klicks eine Übungssession mit passenden Produktbereichen konfigurieren.",
   },
   {
     Icon: QrIcon,
     step: "2",
     title: "QR oder Code teilen",
-    description: "Schuelerinnen und Schueler scannen den QR-Code oder geben einen kurzen Code ein.",
+    description: "Schülerinnen und Schüler scannen den QR-Code oder geben einen kurzen Code ein.",
   },
   {
     Icon: BarChartIcon,
     step: "3",
-    title: "Ueben + Resultate",
-    description: "Schuelerinnen und Schueler ueben selbststaendig. Lehrpersonen sehen Fortschritte.",
+    title: "Üben + Resultate",
+    description: "Schülerinnen und Schüler üben selbstständig. Lehrpersonen sehen Fortschritte.",
   },
 ];
 
@@ -28,7 +28,7 @@ export function ClassroomFlow() {
       <Container size="wide">
         <SectionHeading
           title="Einfach im Unterricht"
-          subtitle="In drei Schritten zur produktiven Uebungseinheit."
+          subtitle="In drei Schritten zur produktiven Übungseinheit."
         />
         <div className="relative mt-12">
           <div className="hidden md:block absolute top-16 left-1/6 right-1/6 h-0.5 bg-border" aria-hidden="true" />
