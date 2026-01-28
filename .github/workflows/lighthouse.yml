@@ -1,0 +1,11 @@
+name: Lighthouse (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: echo "Lighthouse checks are not wired yet. Run locally until CI is added."

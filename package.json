@@ -8,6 +8,7 @@
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
     "lint": "pnpm -r --if-present lint",
+    "check:schema-sync": "node scripts/check-schema-sync.mjs",
     "check:no-hex": "node scripts/check-no-hex.mjs",
     "ui:check": "node scripts/check-no-hex.mjs"
   },

@@ -1,0 +1,11 @@
+name: E2E (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: echo "E2E tests are not wired yet. Run Playwright locally once configured."

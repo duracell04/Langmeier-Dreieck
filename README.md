@@ -311,3 +311,15 @@ Quick summary:
   - `VITE_SUPABASE_ANON_KEY`
 
 Students join via the `join_class` edge function and events are submitted only via `submit_events`.
+
+---
+
+## Deployment (MVP)
+
+See `docs/deployment.md` for Supabase + static hosting steps and required env vars.
+
+## Paywall placeholder (teacher-only)
+
+The MVP includes a **feature-flagged** paywall placeholder for future Stripe integration.
+It is **hidden by default** and only appears when `VITE_SHOW_PAYWALL_PLACEHOLDER=true`.
+Use `VITE_ENTITLEMENT_OVERRIDE=pro` to force-unlock locally.

@@ -15,6 +15,9 @@ The `classes` table includes default settings required by the student app:
 
 These are added in `supabase/migrations/20260127133000_class_defaults.sql`.
 
+Optional paywall flag (teacher-only placeholder):
+- `classes.settings.paid` (boolean, default false)
+
 ## Required env vars (frontend)
 
 Create local env files from the examples:
