@@ -92,8 +92,8 @@ No "dense" UI:
 
 **Wrong attempt 2:**
 - Show info state `feedback.structureExplanation`.
-- Trigger a short structure flash (1-2s), then reveal correct value.
-- Continue without shame language.
+- Show structure lens and reveal correct value.
+- Keep the grid visible and allow retries until the student enters the correct answer, then continue.
 
 ---
 

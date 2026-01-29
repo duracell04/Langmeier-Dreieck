@@ -150,6 +150,9 @@ export function Select() {
       <div className="min-h-screen bg-bg text-foreground font-sans flex flex-col">
         <Navbar
           brand={t("common.brand")}
+          onBrandClick={() => {
+            window.location.hash = "#/landing";
+          }}
           ctaLabel={t("common.info")}
           onCtaClick={() => {
             window.location.hash = "#/landing";
@@ -171,6 +174,9 @@ export function Select() {
     <div className="min-h-screen bg-bg text-foreground font-sans flex flex-col">
       <Navbar
         brand={t("common.brand")}
+        onBrandClick={() => {
+          window.location.hash = "#/landing";
+        }}
         ctaLabel={t("common.info")}
         onCtaClick={() => {
           window.location.hash = "#/landing";

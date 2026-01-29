@@ -44,22 +44,18 @@ State machine for a single task. Timings are default values; small tuning allowe
 States:
 - solve: student can input answer.
 - wrong1: show "try again" feedback; input cleared.
-- structure: show structure lens and guidance.
 - success: correct answer confirmed; auto-advance after SUCCESS_DWELL_MS.
-- reveal: show correct answer; auto-advance after REVEAL_DWELL_MS; task requeued.
+- reveal: show structure lens + correct answer; stays visible until correct input; task requeued on completion.
 
 Transitions:
 - solve -> success on correct input.
 - solve -> wrong1 on first wrong input.
 - wrong1 -> solve on next input.
-- solve/wrong1 -> structure on second wrong input.
-- structure -> solve on next input.
-- structure -> reveal on third wrong input.
-- reveal -> next task after dwell.
+- solve/wrong1 -> reveal on second wrong input.
+- reveal -> success on correct input (task requeued), then advance after success dwell.
 
 Timing defaults (align with app constants):
 - SUCCESS_DWELL_MS = 700
-- REVEAL_DWELL_MS = 1600
 
 Structure lens rules are defined in ENGINE_RULES.
 Event emissions are defined in DATA_BACKEND.

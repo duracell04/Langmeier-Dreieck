@@ -14,7 +14,7 @@ This audit is derived from:
   Evidence: apps/teacher-dashboard/src/App.tsx
 - UX invariants (one-screen loop, calm feedback, no clutter, no multiple choice): PASS
   Evidence: apps/student-pwa/src/routes/Practice.tsx, packages/ui-kit/src/student/FeedbackLadder.tsx, packages/ui-kit/src/student/Keypad.tsx
-- Practice phase machine (solve|wrong1|structure|success|reveal + timings): PASS
+- Practice phase machine (solve|wrong1|reveal-hold|success): PASS
   Evidence: apps/student-pwa/src/routes/Practice.tsx, packages/core-engine/src/engine/phaseMachine.ts
 - UI copy rules (de-CH, no sharp-s): PASS
   Evidence: apps/student-pwa/src/routes/Join.tsx, apps/student-pwa/src/routes/Practice.tsx, apps/teacher-dashboard/src/App.tsx
@@ -30,7 +30,7 @@ This audit is derived from:
   Evidence: packages/core-engine/src/engine/learnQueue.ts
 - Test queue policy (seeded, fair, anti-swap N=2, recent family window 2-3): PASS
   Evidence: packages/core-engine/src/engine/picker.ts
-- Requeue policy (wrong3 -> minSpacing=6, density cap, swap spacing): PASS
+- Requeue policy (reveal -> minSpacing=6, density cap, swap spacing): PASS
   Evidence: packages/core-engine/src/engine/requeue.ts, apps/student-pwa/src/routes/Practice.tsx
 - Stable task key rules (no random UUID for identity): PASS
   Evidence: packages/core-engine/src/engine/generateTask.ts

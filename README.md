@@ -35,6 +35,7 @@ This supports **relational understanding** over purely instrumental procedures (
 - **Test mode** (interleaved): minimal aids, optional timed sprints
 - **Multiplication + Division** with **visual role clarity**
 - **Mastery queue** (family-level) + **re-queue** on errors
+- **Structure lens persists on 2nd wrong**: grid + correct value stay visible until the student enters the correct answer
 - **Static 100-grid structure lens (SVG)** (animations deferred)
 - **Anonymous classroom join** via QR + short join code (no student emails)
 

@@ -13,7 +13,7 @@ If UI behavior changes, update this file.
 - **Attempt**: one submission by the student
 - **Feedback ladder**:
   1) wrong #1 -> "try again"
-  2) wrong #2 -> "structure flash" + reveal correct + re-queue
+  2) wrong #2 -> show structure lens + reveal correct; keep visible until correct input; then re-queue
 
 ---
 
@@ -40,11 +40,11 @@ If UI behavior changes, update this file.
   - show microcopy: `feedback.tryAgain`
   - keep task active; allow immediate retry
 
-- `FEEDBACK_WRONG_2_STRUCTURE`
+- `FEEDBACK_WRONG_2_REVEAL`
   - show microcopy: `feedback.structureExplanation`
-  - structure lens flash 1-2s
   - reveal correct answer
-  - then move on
+  - keep structure lens visible until the student enters the correct answer
+  - then move on (task re-queued)
 
 - `PAUSED`
   - pause sheet; no timers; resume returns to prior state
@@ -73,7 +73,7 @@ If UI behavior changes, update this file.
 - `SUBMITTING` -> `FEEDBACK_WRONG_1`
   - if wrong and attemptCountForThisTask == 1
 
-- `SUBMITTING` -> `FEEDBACK_WRONG_2_STRUCTURE`
+- `SUBMITTING` -> `FEEDBACK_WRONG_2_REVEAL`
   - if wrong and attemptCountForThisTask == 2
   - must display correctValue from engine
 
@@ -83,8 +83,8 @@ If UI behavior changes, update this file.
 - `FEEDBACK_WRONG_1` -> `TYPING`
   - as soon as student starts retyping
 
-- `FEEDBACK_WRONG_2_STRUCTURE` -> `READY`
-  - after structure flash + reveal + continue
+- `FEEDBACK_WRONG_2_REVEAL` -> `READY`
+  - after student enters the correct answer
   - engine re-queues family (needs reinforcement)
 
 - `ANY` -> `PAUSED`
@@ -102,13 +102,13 @@ If UI behavior changes, update this file.
 
 The core-engine must provide a result object like:
 
-- `feedbackAction: 'none' | 'try_again' | 'structure_flash' | 'correct'`
-- `correctValue?: number` (required for `structure_flash`)
+- `feedbackAction: 'none' | 'try_again' | 'structure_hold' | 'correct'`
+- `correctValue?: number` (required for `structure_hold`)
 - `requeueFamily?: boolean` (true on wrong #2)
 
 UI rules:
 - On `try_again`: show `feedback.tryAgain` and do NOT shame
-- On `structure_flash`: show structure lens briefly, then reveal correct, then continue
+- On `structure_hold`: show structure lens and reveal correct value; keep visible until correct input, then continue
 
 ---
 
@@ -116,7 +116,7 @@ UI rules:
 
 - Hidden by default in Test mode.
 - Allowed in Learn mode.
-- On wrong #2, UI must show a brief flash even in Test mode (progressive disclosure).
+- On wrong #2, UI must show the structure lens (even in Test mode) and keep it visible until correct input.
 
 Lens rendering:
 - Multiplication: rectangle highlight (a x b)

@@ -33,6 +33,9 @@ export function Landing() {
     <div className="min-h-screen bg-bg text-foreground font-sans">
       <Navbar
         brand={t("common.brand")}
+        onBrandClick={() => {
+          window.location.hash = "#/landing";
+        }}
         links={navLinks}
         ctaLabel={t("landing.hero.ctaPrimary")}
         onCtaClick={() => {

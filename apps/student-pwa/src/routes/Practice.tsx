@@ -54,8 +54,6 @@ import { sortProductSets } from "../services/productSets";
 import { useI18n } from "../i18n";
 
 const SUCCESS_DWELL_MS = 700;
-const REVEAL_DWELL_MS = 1600;
-const STRUCTURE_FLASH_MS = 1200;
 const STRUCTURE_ANIM_MS = 900;
 const SPEED_DWELL_MS = {
   slow: { success: 900, reveal: 1800 },
@@ -210,6 +208,7 @@ export function Practice() {
   const timers = React.useRef<number[]>([]);
   const structureTimer = React.useRef<number | null>(null);
   const syncTimer = React.useRef<number | null>(null);
+  const revealFinalizedRef = React.useRef(false);
 
   const syncConfig = React.useMemo(
     () => ({
@@ -480,6 +479,7 @@ export function Practice() {
     setAttemptsBeforeEnd(0);
     setPhase("solve");
     setStructureUsed(false);
+    revealFinalizedRef.current = false;
   }, [clearTimers]);
 
   const goNext = React.useCallback(() => {
@@ -588,7 +588,6 @@ export function Practice() {
   }, []);
 
   const successDwellMs = mode === "test" ? SPEED_DWELL_MS[speed].success : SUCCESS_DWELL_MS;
-  const revealDwellMs = mode === "test" ? SPEED_DWELL_MS[speed].reveal : REVEAL_DWELL_MS;
   const showDynamicStructure =
     showStructure || phase === "structure" || phase === "reveal" || (mode === "learn" && phase === "success");
 
@@ -663,10 +662,19 @@ export function Practice() {
     setInput("");
   }, []);
 
-  const handleReveal = React.useCallback(() => {
-    if (!task) return;
+  const handleSecondWrong = React.useCallback(() => {
+    if (task) emitStructureHint(task);
+    setAttemptsBeforeEnd(2);
     setPhase("reveal");
     setStructureUsed(true);
+    setInput("");
+  }, [emitStructureHint, task]);
+
+  const finalizeReveal = React.useCallback(() => {
+    if (!task) return;
+    if (revealFinalizedRef.current) return;
+    revealFinalizedRef.current = true;
+    setPhase("success");
     emitTaskEnd(task, "reveal", 2, true);
     sessionItemsRef.current += 1;
 
@@ -683,25 +691,16 @@ export function Practice() {
     if (sessionItemsRef.current >= sessionTotal) {
       schedule(() => {
         window.location.hash = "#/results";
-      }, revealDwellMs);
+      }, successDwellMs);
       return;
     }
-    schedule(goNext, revealDwellMs);
-  }, [emitTaskEnd, goNext, revealDwellMs, schedule, sessionTotal, task]);
-
-  const handleSecondWrong = React.useCallback(() => {
-    if (task) emitStructureHint(task);
-    setAttemptsBeforeEnd(2);
-    setPhase("structure");
-    setStructureUsed(true);
-    setInput("");
-    schedule(handleReveal, STRUCTURE_FLASH_MS);
-  }, [emitStructureHint, handleReveal, schedule, task]);
+    schedule(goNext, successDwellMs);
+  }, [emitTaskEnd, goNext, schedule, sessionTotal, successDwellMs, task]);
 
   const submit = React.useCallback(() => {
     if (!task) return;
     if (!input.length) return;
-    if (phase === "success" || phase === "reveal" || phase === "structure") return;
+    if (phase === "success") return;
 
     const answer = Number(input);
     if (Number.isNaN(answer)) return;
@@ -715,7 +714,7 @@ export function Practice() {
 
     if (phase === "reveal") {
       if (correct) {
-        goNext();
+        finalizeReveal();
       } else {
         setInput("");
       }
@@ -737,15 +736,15 @@ export function Practice() {
       return;
     }
 
-    handleReveal();
+    handleSecondWrong();
   }, [
     attemptsBeforeEnd,
     emitAttempt,
     handleCorrect,
     handleFirstWrong,
-    handleReveal,
     handleSecondWrong,
     input,
+    finalizeReveal,
     phase,
     sessionId,
     sessionManager,
@@ -754,7 +753,7 @@ export function Practice() {
 
   const onKey = React.useCallback(
     (key: KeypadKey) => {
-      if (phase === "success" || phase === "reveal" || phase === "structure") return;
+      if (phase === "success") return;
       if (key === "clear") {
         setInput("");
         return;
@@ -882,12 +881,15 @@ export function Practice() {
             ? t("practice.feedback.correct")
             : undefined;
 
-  const feedbackDetail = phase === "reveal" ? t("practice.feedback.requeue") : undefined;
+  const feedbackDetail =
+    phase === "reveal"
+      ? `${t("practice.feedback.structure")} ${t("practice.feedback.requeue")}`
+      : undefined;
 
   const dynamicRows = structureStep?.rows ?? structurePair.left;
   const dynamicCols = structureStep?.cols ?? structurePair.right;
   const gridVisible = showDynamicStructure;
-  const keypadDisabled = phase === "success" || phase === "reveal" || phase === "structure";
+  const keypadDisabled = phase === "success";
   const feedbackState: FeedbackState = phase === "solve" ? "solve" : phase;
 
   const equationMissing: React.ReactNode = reveal ? <span className="text-warning/70">{correct}</span> : "?";
@@ -1027,7 +1029,7 @@ export function Practice() {
             <div className="mt-4 flex justify-center">
               <div className="relative">
                 <StructureLensGrid
-                  visible
+                  visible={!gridVisible}
                   mode="count"
                   rows={10}
                   cols={10}
@@ -1069,11 +1071,6 @@ export function Practice() {
     </>
   );
 }
-
-
-
-
-
 
 
 
