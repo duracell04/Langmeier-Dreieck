@@ -127,7 +127,7 @@ export function Landing() {
               subtitle={t("landing.classroom.subtitle")}
             />
             <div className="relative mt-12">
-              <div className="hidden md:block absolute top-16 left-1/6 right-1/6 h-0.5 bg-border" aria-hidden="true" />
+              <div className="hidden md:block absolute top-16 left-1/6 right-1/6 h-0.5 bg-transparent" aria-hidden="true" />
               <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
                 {steps.map((step, index) => (
                   <div
