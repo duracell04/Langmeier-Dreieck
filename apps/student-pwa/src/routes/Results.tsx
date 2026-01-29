@@ -1,9 +1,8 @@
 import React from "react";
 import { Badge, Button, Card } from "@triangle/ui-kit";
-import { computeGamification } from "@triangle/core-engine";
-import type { SessionEndEvent, StudentEvent, TaskEndEvent } from "@triangle/types";
-import { queryEvents, getStudentRef } from "@triangle/storage";
-import { joinClass, loadStoredIdentity } from "../services/joinUseCases";
+import { computeGamification, recommendNextStep } from "@triangle/core-engine";
+import type { SessionEndEvent, SessionStartEvent, StudentEvent, TaskEndEvent } from "@triangle/types";
+import { getPracticeConfig, getStudentRef, queryEvents } from "@triangle/storage";
 import { useI18n } from "../i18n";
 import { LanguageToggle } from "../ui/LanguageToggle";
 
@@ -13,6 +12,8 @@ type Summary = {
   reveals: number;
   accuracy: number;
   durationMs?: number;
+  mode?: "learn" | "test";
+  speed?: "slow" | "fast";
 };
 
 function isTaskEndEvent(event: StudentEvent): event is TaskEndEvent {
@@ -23,28 +24,26 @@ function isSessionEndEvent(event: StudentEvent): event is SessionEndEvent {
   return event.type === "session_end";
 }
 
+function isSessionStartEvent(event: StudentEvent): event is SessionStartEvent {
+  return event.type === "session_start";
+}
+
+function formatDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
 export function Results() {
   const { t } = useI18n();
   const [summary, setSummary] = React.useState<Summary | null>(null);
   const [badges, setBadges] = React.useState<Array<{ id: string; label: string }>>([]);
-  const [stored, setStored] = React.useState<Awaited<ReturnType<typeof loadStoredIdentity>> | null>(null);
-  const [status, setStatus] = React.useState<"idle" | "joining" | "error">("idle");
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    let active = true;
-    loadStoredIdentity().then(identity => {
-      if (active) setStored(identity);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   React.useEffect(() => {
     let active = true;
     (async () => {
-      const studentRef = await getStudentRef();
+      const [studentRef, practiceConfig] = await Promise.all([getStudentRef(), getPracticeConfig()]);
       if (!studentRef) {
         if (active) setSummary(null);
         return;
@@ -55,6 +54,10 @@ export function Results() {
       const lastSessionEnd = [...sorted].reverse().find(isSessionEndEvent);
       const lastTaskEnd = [...sorted].reverse().find(isTaskEndEvent);
       const sessionId = lastSessionEnd?.sessionId ?? lastTaskEnd?.sessionId;
+      const lastSessionStart = [...sorted]
+        .reverse()
+        .filter(isSessionStartEvent)
+        .find(event => !sessionId || event.sessionId === sessionId);
 
       const taskEnds = sorted.filter(isTaskEndEvent).filter(event => !sessionId || event.sessionId === sessionId);
       const total = taskEnds.length;
@@ -64,9 +67,11 @@ export function Results() {
 
       const sessionEndDuration = lastSessionEnd?.durationMs;
       const gamification = computeGamification(taskEnds);
+      const mode = lastSessionStart?.mode ?? practiceConfig?.mode;
+      const speed = practiceConfig?.speed ?? "slow";
 
       if (!active) return;
-      setSummary({ total, correct, reveals, accuracy, durationMs: sessionEndDuration });
+      setSummary({ total, correct, reveals, accuracy, durationMs: sessionEndDuration, mode, speed });
       setBadges(gamification.badgesUnlocked ?? []);
     })();
 
@@ -75,30 +80,25 @@ export function Results() {
     };
   }, []);
 
-  const onRetry = () => {
+  const onRepeat = () => {
+    window.location.hash = "#/practice";
+  };
+
+  const onSelect = () => {
     window.location.hash = "#/select";
   };
 
-  const onHome = () => {
-    window.location.hash = "#/";
-  };
-
-  const onRejoin = async () => {
-    if (!stored) return;
-    setStatus("joining");
-    setErrorMessage(null);
-    if (!navigator.onLine) {
-      window.location.hash = "#/select";
-      return;
-    }
-    try {
-      await joinClass(stored.joinCode, stored.identityMarker);
-      window.location.hash = "#/select";
-    } catch {
-      setStatus("error");
-      setErrorMessage(t("results.errors.joinFailed"));
-    }
-  };
+  const nextStep = summary
+    ? recommendNextStep({
+        total: summary.total,
+        reveals: summary.reveals,
+        accuracy: summary.accuracy,
+        mode: summary.mode,
+      })
+    : null;
+  const speedLabel =
+    summary?.speed === "fast" ? t("practice.selection.speedFast") : t("practice.selection.speedSlow");
+  const durationLabel = summary?.durationMs != null ? formatDuration(summary.durationMs) : null;
 
   return (
     <main className="min-h-screen bg-bg text-ink font-sans">
@@ -134,6 +134,23 @@ export function Results() {
             <div className="text-sm text-muted">{t("results.empty")}</div>
           )}
 
+          {summary?.mode === "test" ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {durationLabel ? (
+                <div className="rounded-swiss border border-grid-border bg-surface px-3 py-3">
+                  <div className="text-micro uppercase tracking-wide text-muted">{t("results.labels.time")}</div>
+                  <div className="mt-2 text-2xl font-semibold text-ink">{durationLabel}</div>
+                </div>
+              ) : null}
+              <div className="rounded-swiss border border-grid-border bg-surface px-3 py-3">
+                <div className="text-micro uppercase tracking-wide text-muted">{t("results.labels.speed")}</div>
+                <div className="mt-2 text-2xl font-semibold text-ink">{speedLabel}</div>
+              </div>
+            </div>
+          ) : null}
+
+          {nextStep ? <div className="text-sm text-muted">{t(`results.next.${nextStep}`)}</div> : null}
+
           {badges.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {badges.map(badge => (
@@ -141,18 +158,11 @@ export function Results() {
               ))}
             </div>
           ) : null}
-
-          {errorMessage ? <div className="text-sm text-warning">{errorMessage}</div> : null}
         </Card>
 
         <div className="grid gap-3">
-          <Button onClick={onRetry}>{t("results.actions.retry")}</Button>
-          <Button variant="secondary" onClick={onHome}>{t("results.actions.home")}</Button>
-          {stored ? (
-            <Button variant="ghost" onClick={onRejoin} disabled={status === "joining"}>
-              {t("results.actions.rejoin")}
-            </Button>
-          ) : null}
+          <Button onClick={onRepeat}>{t("results.actions.repeat")}</Button>
+          <Button variant="secondary" onClick={onSelect}>{t("results.actions.select")}</Button>
         </div>
       </div>
     </main>

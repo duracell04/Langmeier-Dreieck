@@ -99,6 +99,11 @@ export const messages = {
     join: {
       title: "Beitreten",
       subtitle: "Kein Login nötig.",
+      resume: {
+        title: "Sitzung fortsetzen?",
+        continue: "Weiter",
+        startNew: "Neu starten",
+      },
       storedHint: "Letzte Klasse ist gespeichert.",
       storedAction: "Letzte Klasse wieder beitreten",
       codeLabel: "Code",
@@ -129,6 +134,16 @@ export const messages = {
       submit: "Pr\u00fcfen",
       taskHeader: "Aufgabe {current} von {total}",
       structureLabel: "Strukturlinse",
+      quantityLabel: "Produktmenge",
+      actions: {
+        back: "Zurück zum Auswahlfenster",
+        info: "i Infos",
+      },
+      exit: {
+        title: "Übung beenden?",
+        confirm: "Beenden",
+        cancel: "Weiter üben",
+      },
       progress: "{current}/{total} Aufgaben",
       correctCount: "Richtig: {count}",
       status: {
@@ -176,9 +191,18 @@ export const messages = {
         tasks: "Aufgaben",
         accuracy: "Genauigkeit",
         revealed: "Aufgedeckt",
+        time: "Zeit",
+        speed: "Tempo",
+      },
+      next: {
+        learnSame: "Nächstes Mal: Lernmodus, gleiche Sets",
+        testSlow: "Nächstes Mal: Testmodus langsam",
+        keepGoing: "Nächstes Mal: Weiter üben",
       },
       empty: "Noch keine Resultate vorhanden.",
       actions: {
+        repeat: "Nochmal",
+        select: "Zur Auswahl",
         retry: "Nochmals üben",
         home: "Home",
         rejoin: "Letzte Klasse wieder beitreten",
@@ -288,6 +312,11 @@ export const messages = {
     join: {
       title: "Join",
       subtitle: "No login required.",
+      resume: {
+        title: "Resume session?",
+        continue: "Continue",
+        startNew: "Start new",
+      },
       storedHint: "Last class is saved.",
       storedAction: "Rejoin last class",
       codeLabel: "Code",
@@ -318,6 +347,16 @@ export const messages = {
       submit: "Check",
       taskHeader: "Task {current} of {total}",
       structureLabel: "Structure lens",
+      quantityLabel: "Product quantity",
+      actions: {
+        back: "Back to selection",
+        info: "i Info",
+      },
+      exit: {
+        title: "End practice?",
+        confirm: "End",
+        cancel: "Keep practicing",
+      },
       progress: "{current}/{total} tasks",
       correctCount: "Correct: {count}",
       status: {
@@ -365,9 +404,18 @@ export const messages = {
         tasks: "Tasks",
         accuracy: "Accuracy",
         revealed: "Revealed",
+        time: "Time",
+        speed: "Speed",
+      },
+      next: {
+        learnSame: "Next time: Learn mode, same sets",
+        testSlow: "Next time: Test mode (slow)",
+        keepGoing: "Next time: Keep practicing",
       },
       empty: "No results yet.",
       actions: {
+        repeat: "Again",
+        select: "Back to selection",
         retry: "Practice again",
         home: "Home",
         rejoin: "Rejoin last class",

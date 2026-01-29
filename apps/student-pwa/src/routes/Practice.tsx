@@ -2,6 +2,7 @@ import React from "react";
 import {
   Badge,
   Button,
+  Card,
   FeedbackLadder,
   Keypad,
   PracticeFrame,
@@ -54,6 +55,8 @@ import { useI18n } from "../i18n";
 
 const SUCCESS_DWELL_MS = 700;
 const REVEAL_DWELL_MS = 1600;
+const STRUCTURE_FLASH_MS = 1200;
+const STRUCTURE_ANIM_MS = 900;
 const SPEED_DWELL_MS = {
   slow: { success: 900, reveal: 1800 },
   fast: { success: 500, reveal: 1400 },
@@ -107,15 +110,43 @@ function expectedAnswer(task: EngineTask): number {
   return task.missing === "left" ? leftValue : rightValue;
 }
 
-function formatSlot(value: number, isMissing: boolean, input: string, reveal: boolean, correct: number) {
+function formatSlot(
+  value: number,
+  isMissing: boolean,
+  input: string,
+  reveal: boolean,
+  correct: number,
+  hidden?: boolean
+): React.ReactNode {
+  if (hidden) return <span className="text-muted-foreground/70"></span>;
   if (!isMissing) return String(value);
-  if (reveal) return String(correct);
+  if (reveal) return <span className="text-warning/70">{correct}</span>;
   return input.length ? input : "?";
+}
+
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(media.matches);
+    update();
+    if (media.addEventListener) {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
+
+  return reduced;
 }
 
 export function Practice() {
   const { t } = useI18n();
   const sessionManager = React.useMemo(() => new SessionManager(new IdbSessionStorage()), []);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const [sessionReady, setSessionReady] = React.useState(false);
   const [sessionId, setSessionId] = React.useState<string | null>(null);
@@ -163,8 +194,21 @@ export function Practice() {
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
   const [elapsedMs, setElapsedMs] = React.useState(0);
   const [correctCount, setCorrectCount] = React.useState(0);
+  const [showStructure, setShowStructure] = React.useState(false);
+  const [showExitConfirm, setShowExitConfirm] = React.useState(false);
+  const [structureStep, setStructureStep] = React.useState<{ rows: number; cols: number } | null>(null);
+
+  const structurePair = React.useMemo(() => {
+    if (!task) return { left: 0, right: 0 };
+    const [a, b] = task.pair;
+    if (task.operation === "mul" && task.missing === "product" && a > b) {
+      return { left: b, right: a };
+    }
+    return { left: a, right: b };
+  }, [task]);
 
   const timers = React.useRef<number[]>([]);
+  const structureTimer = React.useRef<number | null>(null);
   const syncTimer = React.useRef<number | null>(null);
 
   const syncConfig = React.useMemo(
@@ -178,6 +222,10 @@ export function Practice() {
   const clearTimers = React.useCallback(() => {
     timers.current.forEach(t => window.clearTimeout(t));
     timers.current = [];
+    if (structureTimer.current) {
+      window.clearInterval(structureTimer.current);
+      structureTimer.current = null;
+    }
     if (syncTimer.current) {
       window.clearTimeout(syncTimer.current);
       syncTimer.current = null;
@@ -513,8 +561,85 @@ export function Practice() {
     [scheduleSync]
   );
 
+
+  const onToggleStructure = React.useCallback(() => {
+    if (mode !== "learn") return;
+    setShowStructure(prev => {
+      const next = !prev;
+      if (next && task) {
+        emitStructureHint(task);
+        setStructureUsed(true);
+      }
+      return next;
+    });
+  }, [emitStructureHint, mode, task]);
+
+  const onRequestExit = React.useCallback(() => {
+    setShowExitConfirm(true);
+  }, []);
+
+  const onCancelExit = React.useCallback(() => {
+    setShowExitConfirm(false);
+  }, []);
+
+  const onConfirmExit = React.useCallback(() => {
+    setShowExitConfirm(false);
+    window.location.hash = "#/select";
+  }, []);
+
   const successDwellMs = mode === "test" ? SPEED_DWELL_MS[speed].success : SUCCESS_DWELL_MS;
   const revealDwellMs = mode === "test" ? SPEED_DWELL_MS[speed].reveal : REVEAL_DWELL_MS;
+  const showDynamicStructure =
+    showStructure || phase === "structure" || phase === "reveal" || (mode === "learn" && phase === "success");
+
+  React.useEffect(() => {
+    if (!task) return;
+    if (!showDynamicStructure) {
+      if (structureTimer.current) {
+        window.clearInterval(structureTimer.current);
+        structureTimer.current = null;
+      }
+      setStructureStep(null);
+      return;
+    }
+
+    const rows = Math.max(1, structurePair.left);
+    const cols = Math.max(1, structurePair.right);
+
+    if (prefersReducedMotion || rows <= 1) {
+      setStructureStep({ rows, cols });
+      return;
+    }
+
+    const steps = task.operation === "div"
+      ? Array.from({ length: rows }, (_, index) => rows - index)
+      : Array.from({ length: rows }, (_, index) => index + 1);
+
+    let idx = 0;
+    setStructureStep({ rows: steps[0], cols });
+
+    if (structureTimer.current) {
+      window.clearInterval(structureTimer.current);
+    }
+
+    const interval = Math.max(60, Math.floor(STRUCTURE_ANIM_MS / steps.length));
+    structureTimer.current = window.setInterval(() => {
+      idx += 1;
+      if (idx >= steps.length) {
+        window.clearInterval(structureTimer.current!);
+        structureTimer.current = null;
+        return;
+      }
+      setStructureStep({ rows: steps[idx], cols });
+    }, interval);
+
+    return () => {
+      if (structureTimer.current) {
+        window.clearInterval(structureTimer.current);
+        structureTimer.current = null;
+      }
+    };
+  }, [prefersReducedMotion, showDynamicStructure, structurePair.left, structurePair.right, task]);
 
   const handleCorrect = React.useCallback(() => {
     if (!task) return;
@@ -537,14 +662,6 @@ export function Practice() {
     setPhase("wrong1");
     setInput("");
   }, []);
-
-  const handleSecondWrong = React.useCallback(() => {
-    if (task) emitStructureHint(task);
-    setAttemptsBeforeEnd(2);
-    setPhase("structure");
-    setStructureUsed(true);
-    setInput("");
-  }, [emitStructureHint, task]);
 
   const handleReveal = React.useCallback(() => {
     if (!task) return;
@@ -572,10 +689,19 @@ export function Practice() {
     schedule(goNext, revealDwellMs);
   }, [emitTaskEnd, goNext, revealDwellMs, schedule, sessionTotal, task]);
 
+  const handleSecondWrong = React.useCallback(() => {
+    if (task) emitStructureHint(task);
+    setAttemptsBeforeEnd(2);
+    setPhase("structure");
+    setStructureUsed(true);
+    setInput("");
+    schedule(handleReveal, STRUCTURE_FLASH_MS);
+  }, [emitStructureHint, handleReveal, schedule, task]);
+
   const submit = React.useCallback(() => {
     if (!task) return;
     if (!input.length) return;
-    if (phase === "success") return;
+    if (phase === "success" || phase === "reveal" || phase === "structure") return;
 
     const answer = Number(input);
     if (Number.isNaN(answer)) return;
@@ -628,7 +754,7 @@ export function Practice() {
 
   const onKey = React.useCallback(
     (key: KeypadKey) => {
-      if (phase === "success" || phase === "reveal") return;
+      if (phase === "success" || phase === "reveal" || phase === "structure") return;
       if (key === "clear") {
         setInput("");
         return;
@@ -668,6 +794,7 @@ export function Practice() {
     return () => window.removeEventListener("keydown", handler);
   }, [onKey]);
 
+
   if (!task) {
     return (
       <PracticeFrame>
@@ -684,17 +811,49 @@ export function Practice() {
   const reveal = phase === "reveal";
   const elapsedSeconds = Math.floor(elapsedMs / 1000);
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
-  const inputDisplay = input.length ? input : "—";
+  const inputDisplay = input.length ? input : "";
   const progressSegments = Math.max(1, Math.min(sessionTotal, 6));
   const filledSegments = Math.min(
     progressSegments,
     Math.max(1, Math.round((progress / sessionTotal) * progressSegments))
   );
 
+  const isSquare = leftValue === rightValue;
+  const hideSquareFactors =
+    mode === "learn" &&
+    task.operation === "mul" &&
+    isSquare &&
+    (missingSlot === "factorA" || missingSlot === "factorB") &&
+    phase !== "success" &&
+    phase !== "reveal";
+
+  const hiddenSymbol = <span className="text-muted-foreground/70"></span>;
+
+  const [factorLeftValue, factorRightValue] =
+    task.operation === "mul" && task.missing === "product" && leftValue > rightValue
+      ? [rightValue, leftValue]
+      : [leftValue, rightValue];
+
   const sharedInput = Boolean(task.squareSharedInput && (missingSlot === "factorA" || missingSlot === "factorB"));
+  const hideFactorA = hideSquareFactors && missingSlot !== "factorA";
+  const hideFactorB = hideSquareFactors && missingSlot !== "factorB";
   const triangleProduct = formatSlot(productValue, missingSlot === "product", input, reveal, correct);
-  const triangleFactorA = formatSlot(leftValue, sharedInput || missingSlot === "factorA", input, reveal, correct);
-  const triangleFactorB = formatSlot(rightValue, sharedInput || missingSlot === "factorB", input, reveal, correct);
+  const triangleFactorA = formatSlot(
+    factorLeftValue,
+    sharedInput || missingSlot === "factorA",
+    input,
+    reveal,
+    correct,
+    hideFactorA
+  );
+  const triangleFactorB = formatSlot(
+    factorRightValue,
+    sharedInput || missingSlot === "factorB",
+    input,
+    reveal,
+    correct,
+    hideFactorB
+  );
 
   const lockedSlots: TriangleSlot[] =
     task.operation === "div"
@@ -725,19 +884,25 @@ export function Practice() {
 
   const feedbackDetail = phase === "reveal" ? t("practice.feedback.requeue") : undefined;
 
-  const gridVisible = phase === "structure" || phase === "reveal";
-  const keypadDisabled = phase === "success" || phase === "reveal";
+  const dynamicRows = structureStep?.rows ?? structurePair.left;
+  const dynamicCols = structureStep?.cols ?? structurePair.right;
+  const gridVisible = showDynamicStructure;
+  const keypadDisabled = phase === "success" || phase === "reveal" || phase === "structure";
   const feedbackState: FeedbackState = phase === "solve" ? "solve" : phase;
 
-  const equationMissing = reveal ? correct : "?";
-  const equationLeft =
-    task.operation === "mul" ? (task.missing === "left" ? equationMissing : leftValue) : productValue;
-  const equationRight =
+  const equationMissing: React.ReactNode = reveal ? <span className="text-warning/70">{correct}</span> : "?";
+  const equationLeftBase =
+    task.operation === "mul" ? (task.missing === "left" ? equationMissing : factorLeftValue) : productValue;
+  const equationRightBase =
     task.operation === "mul"
-      ? (task.missing === "right" ? equationMissing : rightValue)
+      ? (task.missing === "right" ? equationMissing : factorRightValue)
       : task.missing === "left"
         ? rightValue
         : leftValue;
+  const equationLeft =
+    hideSquareFactors && task.operation === "mul" && task.missing !== "left" ? hiddenSymbol : equationLeftBase;
+  const equationRight =
+    hideSquareFactors && task.operation === "mul" && task.missing !== "right" ? hiddenSymbol : equationRightBase;
   const equationResult =
     task.operation === "mul"
       ? task.missing === "product"
@@ -747,128 +912,192 @@ export function Practice() {
   const equationSymbol = task.operation === "mul" ? "\u00D7" : ":";
 
   return (
-    <PracticeFrame
-      footerMode="fixed-mobile"
-      header={
-        <>
-          <div className="grid gap-1 text-xs text-muted-foreground">
-            <span>{t("practice.progress", { current: progress, total: sessionTotal })}</span>
-            <span>{t("practice.correctCount", { count: correctCount })}</span>
-          </div>
-          {mode === "test" ? <div className="text-xs text-muted-foreground">{elapsedLabel}</div> : null}
-          {!isOnline ? <Badge>{t("practice.status.offline")}</Badge> : null}
-        </>
-      }
-      footer={
-        <div className="mx-auto w-full max-w-md">
-          <div className="card-elevated p-5 sm:p-6">
-            <div className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("practice.answerLabel")}
+    <>
+      <PracticeFrame
+        footerMode="fixed-mobile"
+        header={
+          <>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={onRequestExit} className="normal-case">
+                {t("practice.actions.back")}
+              </Button>
+              <Button
+                variant={showStructure ? "secondary" : "ghost"}
+                size="sm"
+                onClick={onToggleStructure}
+                className="normal-case"
+                disabled={mode !== "learn"}
+              >
+                {t("practice.actions.info")}
+              </Button>
             </div>
-            <div
-              className={cn(
-                "mt-4 flex min-h-touch items-center justify-center rounded-xl border border-border/60 bg-muted/40 px-4 py-3 text-center text-2xl font-semibold",
-                input.length ? "text-foreground" : "text-muted-foreground/60"
-              )}
-            >
-              {inputDisplay}
+            <div className="grid gap-1 text-xs text-muted-foreground text-center">
+              <span>{t("practice.progress", { current: progress, total: sessionTotal })}</span>
+              <span>{t("practice.correctCount", { count: correctCount })}</span>
             </div>
-            <div className="mt-4">
-              <Keypad onKey={onKey} disabled={keypadDisabled} showEnter={false} showClear />
+            <div className="flex items-center gap-2">
+              {mode === "test" ? <div className="text-xs text-muted-foreground">{elapsedLabel}</div> : null}
+              {!isOnline ? <Badge>{t("practice.status.offline")}</Badge> : null}
             </div>
-            <Button
-              variant="hero"
-              size="lg"
-              className="mt-4 w-full"
-              onClick={submit}
-              disabled={keypadDisabled || !input.length}
-            >
-              {t("practice.submit")}
-            </Button>
-          </div>
-        </div>
-      }
-    >
-      <div className="flex w-full flex-col items-center gap-6">
-        <div className="w-full max-w-sm">
-          <div className="flex gap-2">
-            {Array.from({ length: progressSegments }, (_, index) => (
+          </>
+        }
+        footer={
+          <div className="mx-auto w-full max-w-md">
+            <div className="card-elevated p-5 sm:p-6">
+              <div className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("practice.answerLabel")}
+              </div>
               <div
-                key={`segment-${index}`}
-                className={cn(
-                  "h-2 flex-1 rounded-full transition-subtle",
-                  index < filledSegments ? "bg-primary/40" : "bg-muted"
-                )}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="card-elevated w-full max-w-sm px-6 py-8 md:px-8">
-          <div className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("practice.taskHeader", { current: progress, total: sessionTotal })}
-          </div>
-
-          <div className="mt-6 flex justify-center">
-            <TriangleDisplay
-              product={triangleProduct}
-              factorA={triangleFactorA}
-              factorB={triangleFactorB}
-              missingSlot={missingSlot}
-              lockedSlots={lockedSlots}
-              operation={task.operation}
-              status={triangleStatus}
-            />
-          </div>
-
-          <div className="mt-5 flex items-center justify-center gap-2 text-base text-muted-foreground">
-            <span className="tabular-nums text-ink">{equationLeft}</span>
-            <span>{equationSymbol}</span>
-            <span
-              className={
-                task.operation === "div"
-                  ? "rounded-lg border border-dashed border-border/60 bg-card px-2 py-1 text-muted-foreground tabular-nums"
-                  : "tabular-nums text-ink"
-              }
-            >
-              {equationRight}
-            </span>
-            <span>=</span>
-            <span className="tabular-nums text-ink">{equationResult}</span>
-          </div>
-
-          {feedbackState !== "solve" || feedbackMessage || feedbackDetail ? (
-            <div className="mt-5">
-              <FeedbackLadder state={feedbackState} message={feedbackMessage} detail={feedbackDetail} />
+                className={`mt-4 flex min-h-touch items-center justify-center rounded-xl border border-border/60 bg-muted/40 px-4 py-3 text-center text-2xl font-semibold ${input.length ? "text-foreground" : "text-muted-foreground/60"}`}
+              >
+                {inputDisplay}
+              </div>
+              <div className="mt-4">
+                <Keypad onKey={onKey} disabled={keypadDisabled} showEnter={false} showClear />
+              </div>
+              <Button
+                variant="hero"
+                size="lg"
+                className="mt-4 w-full"
+                onClick={submit}
+                disabled={keypadDisabled || !input.length}
+              >
+                {t("practice.submit")}
+              </Button>
             </div>
-          ) : null}
-        </div>
+          </div>
+        }
+      >
+        <div className="flex w-full flex-col items-center gap-6">
+          <div className="w-full max-w-sm">
+            <div className="flex gap-2">
+              {Array.from({ length: progressSegments }, (_, index) => (
+                <div
+                  key={`segment-${index}`}
+                  className={`h-2 flex-1 rounded-full transition-subtle ${index < filledSegments ? "bg-primary/40" : "bg-muted"}`}
+                />
+              ))}
+            </div>
+          </div>
 
-        {gridVisible ? (
+          <div className="card-elevated w-full max-w-sm px-6 py-8 md:px-8">
+            <div className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("practice.taskHeader", { current: progress, total: sessionTotal })}
+            </div>
+
+            <div className="mt-6 flex justify-center">
+              <TriangleDisplay
+                product={triangleProduct}
+                factorA={triangleFactorA}
+                factorB={triangleFactorB}
+                missingSlot={missingSlot}
+                lockedSlots={lockedSlots}
+                operation={task.operation}
+                status={triangleStatus}
+              />
+            </div>
+
+            <div className="mt-5 flex items-center justify-center gap-2 text-base text-muted-foreground">
+              <span className="tabular-nums text-ink">{equationLeft}</span>
+              <span>{equationSymbol}</span>
+              <span
+                className={
+                  task.operation === "div"
+                    ? "rounded-lg border border-dashed border-border/60 bg-card px-2 py-1 text-muted-foreground tabular-nums"
+                    : "tabular-nums text-ink"
+                }
+              >
+                {equationRight}
+              </span>
+              <span>=</span>
+              <span className="tabular-nums text-ink">{equationResult}</span>
+            </div>
+
+            {feedbackState !== "solve" || feedbackMessage || feedbackDetail ? (
+              <div className="mt-5">
+                <FeedbackLadder state={feedbackState} message={feedbackMessage} detail={feedbackDetail} />
+              </div>
+            ) : null}
+          </div>
+
           <div className="card-elevated w-full max-w-sm px-5 py-6 text-center">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("practice.structureLabel")}
+              {t("practice.quantityLabel")}
             </div>
             <div className="mt-4 flex justify-center">
-              <StructureLensGrid
-                visible={gridVisible}
-                rows={leftValue}
-                cols={rightValue}
-                showNumbers
-                highlight="both"
-                outlineFilledRegion
-                gridSize={Math.max(6, Math.min(10, Math.max(leftValue, rightValue)))}
-              />
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              {leftValue} \u00D7 {rightValue} = {productValue}
+              <div className="relative">
+                <StructureLensGrid
+                  visible
+                  mode="count"
+                  rows={10}
+                  cols={10}
+                  count={productValue}
+                  highlight="none"
+                  gridSize={10}
+                />
+                <div
+                  className={`absolute inset-0 flex items-start justify-center transition-subtle ${gridVisible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                >
+                  <StructureLensGrid
+                    visible={gridVisible}
+                    rows={dynamicRows}
+                    cols={dynamicCols}
+                    showNumbers
+                    highlight="both"
+                    outlineFilledRegion
+                    gridSize={10}
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        ) : null}
-      </div>
-    </PracticeFrame>
+        </div>
+      </PracticeFrame>
+      {showExitConfirm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 px-6">
+          <Card className="grid w-full max-w-sm gap-4 p-5 text-center">
+            <div className="text-base font-semibold text-foreground">{t("practice.exit.title")}</div>
+            <div className="flex flex-col gap-2">
+              <Button onClick={onConfirmExit}>{t("practice.exit.confirm")}</Button>
+              <Button variant="secondary" onClick={onCancelExit}>
+                {t("practice.exit.cancel")}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
+    </>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -20,7 +20,6 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ["@triangle/core-engine"],
-    exclude: ["@triangle/storage"],
+    exclude: ["@triangle/core-engine", "@triangle/storage"],
   },
 });

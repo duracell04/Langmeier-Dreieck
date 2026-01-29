@@ -1,4 +1,5 @@
-﻿import React from "react";
+import React from "react";
+import { SessionManager, type PracticeSession } from "@triangle/core-engine";
 import { Button, Card, Container, Footer, Navbar, Section, TextInput } from "@triangle/ui-kit";
 import {
   clearStoredIdentity,
@@ -7,6 +8,7 @@ import {
   PRIMARY_DEMO_JOIN_CODE,
   type StoredIdentity,
 } from "../services/joinUseCases";
+import { IdbSessionStorage } from "@triangle/storage";
 import { useI18n } from "../i18n";
 
 const MARKERS = [
@@ -35,6 +37,7 @@ function readJoinCodeFromUrl(): string | null {
 
 export function Join() {
   const { t } = useI18n();
+  const sessionManager = React.useMemo(() => new SessionManager(new IdbSessionStorage()), []);
   const year = new Date().getFullYear();
   const copyright = t("common.copyright", { year, brand: t("common.brand") });
   const [code, setCode] = React.useState("");
@@ -44,6 +47,8 @@ export function Join() {
   const [stored, setStored] = React.useState<StoredIdentity | null>(null);
   const [autoJoin, setAutoJoin] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
+  const [resumeSession, setResumeSession] = React.useState<PracticeSession | null>(null);
+  const [resumeChecked, setResumeChecked] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -58,6 +63,17 @@ export function Join() {
       active = false;
     };
   }, []);
+  React.useEffect(() => {
+    let active = true;
+    sessionManager.recoverSession().then(session => {
+      if (!active) return;
+      setResumeSession(session);
+      setResumeChecked(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [sessionManager]);
 
   React.useEffect(() => {
     const handleStatus = () => setIsOnline(navigator.onLine);
@@ -90,8 +106,9 @@ export function Join() {
     setStatus("joining");
     setErrorMessage(null);
     try {
-      await joinClass(normalized, identity);
-      window.location.hash = "#/select";
+      const result = await joinClass(normalized, identity);
+      const allowOverride = result.classConfig.allowStudentOverride ?? false;
+      window.location.hash = allowOverride ? "#/select" : "#/practice";
     } catch {
       const offline = typeof navigator !== "undefined" && !navigator.onLine;
       setErrorMessage(offline ? t("join.errors.offline") : t("join.errors.joinFailed"));
@@ -107,21 +124,24 @@ export function Join() {
     if (!autoJoin) return;
     if (!code.trim()) return;
     if (status !== "idle") return;
+    if (!resumeChecked) return;
+    if (resumeSession) return;
     onJoin();
     setAutoJoin(false);
-  }, [autoJoin, code, onJoin, status]);
+  }, [autoJoin, code, onJoin, resumeChecked, resumeSession, status]);
 
   const onContinue = React.useCallback(async () => {
     if (!stored) return;
     if (!navigator.onLine) {
-      window.location.hash = "#/select";
+      window.location.hash = "#/practice";
       return;
     }
     setStatus("joining");
     setErrorMessage(null);
     try {
-      await joinClass(stored.joinCode, stored.identityMarker);
-      window.location.hash = "#/select";
+      const result = await joinClass(stored.joinCode, stored.identityMarker);
+      const allowOverride = result.classConfig.allowStudentOverride ?? false;
+      window.location.hash = allowOverride ? "#/select" : "#/practice";
     } catch {
       await clearStoredIdentity();
       setStored(null);
@@ -129,6 +149,19 @@ export function Join() {
       setStatus("error");
     }
   }, [stored, t]);
+  const onResume = React.useCallback(() => {
+    window.location.hash = "#/practice";
+  }, []);
+
+  const onStartNew = React.useCallback(async () => {
+    if (resumeSession) {
+      await sessionManager.endSession(resumeSession.sessionId);
+    }
+    setResumeSession(null);
+    if (code.trim()) {
+      onJoin(code);
+    }
+  }, [code, onJoin, resumeSession, sessionManager]);
 
   return (
     <div className="min-h-screen bg-bg text-foreground font-sans flex flex-col">
@@ -151,6 +184,19 @@ export function Join() {
               </header>
 
               <Card raised className="grid gap-6 p-6 md:p-8">
+                {resumeSession ? (
+                  <Card className="grid gap-3 bg-background p-4">
+                    <div className="text-sm text-muted-foreground">{t("join.resume.title")}</div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button onClick={onResume} size="sm">
+                        {t("join.resume.continue")}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={onStartNew}>
+                        {t("join.resume.startNew")}
+                      </Button>
+                    </div>
+                  </Card>
+                ) : null}
                 {stored ? (
                   <Card className="grid gap-2 bg-background p-4">
                     <div className="text-sm text-muted-foreground">{t("join.storedHint")}</div>
@@ -193,3 +239,13 @@ export function Join() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

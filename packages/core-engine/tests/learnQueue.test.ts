@@ -28,4 +28,15 @@ describe("buildLearnPlan", () => {
     expect(next?.swap).toBe("swap");
     expect(next?.pair).toEqual(firstPair.pair);
   });
+
+  it("marks square tasks for shared input in single mode", () => {
+    const families = buildCoreFamilies({ minFactor: 3, maxFactor: 3 });
+    const plan = buildLearnPlan(families, { divisionEnabled: false, squareMode: "single" });
+
+    const squareTasks = plan.filter(item => item.pair[0] === item.pair[1] && item.operation === "mul");
+    const factorTasks = squareTasks.filter(item => item.missing === "left" || item.missing === "right");
+
+    expect(factorTasks).toHaveLength(1);
+    expect(factorTasks[0]?.squareSharedInput).toBe(true);
+  });
 });

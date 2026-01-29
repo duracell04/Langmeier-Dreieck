@@ -23,6 +23,13 @@ const DEFAULT_PRACTICE_CONFIG: PracticeConfig = {
   speed: "slow",
 };
 
+function expandAllProducts(selected: ProductSetId[], allowed: ProductSetId[]): ProductSetId[] {
+  if (selected.includes("all_products")) {
+    return sortProductSets([...new Set(allowed)]);
+  }
+  return sortProductSets(selected.length ? selected : allowed);
+}
+
 export function Select() {
   const { t } = useI18n();
   const year = new Date().getFullYear();
@@ -75,10 +82,11 @@ export function Select() {
       const initialSets = allowOverride
         ? basePractice.productSets.filter(setId => allowed.includes(setId))
         : allowed;
+      const resolvedSets = expandAllProducts(initialSets.length ? initialSets : allowed, allowed);
 
       setMode(resolvedMode);
       setSpeed(resolvedSpeed);
-      setSelectedSets(sortProductSets(initialSets.length ? initialSets : allowed));
+      setSelectedSets(resolvedSets);
       setLoading(false);
     })();
 
@@ -94,21 +102,36 @@ export function Select() {
   const toggleSet = (setId: ProductSetId) => {
     setSelectedSets(prev => {
       const isActive = prev.includes(setId);
-      if (isActive) {
-        const next = prev.filter(item => item !== setId);
-        return next.length ? next : prev;
+      if (setId === "all_products") {
+        if (isActive) {
+          const next = prev.filter(item => item !== "all_products");
+          return next.length ? sortProductSets(next) : prev;
+        }
+        return sortProductSets([...new Set(allowedSets)]);
       }
-      return sortProductSets([...prev, setId]);
+
+      let next = isActive ? prev.filter(item => item !== setId) : [...prev, setId];
+      if (!next.length) return prev;
+
+      if (next.includes("all_products")) {
+        const allSelected = allowedSets.every(item => next.includes(item));
+        if (!allSelected) {
+          next = next.filter(item => item !== "all_products");
+        }
+      }
+
+      return sortProductSets(next);
     });
   };
 
   const onStart = async () => {
     const baseConfig = classConfig ?? DEFAULT_CLASS_CONFIG;
+    const nextSets = allowStudentOverride
+      ? expandAllProducts(selectedSets.length ? selectedSets : allowedSets, allowedSets)
+      : allowedSets;
     const next: PracticeConfig = {
       mode: allowStudentOverride ? mode : baseConfig.defaultMode,
-      productSets: sortProductSets(
-        allowStudentOverride ? (selectedSets.length ? selectedSets : allowedSets) : allowedSets
-      ),
+      productSets: nextSets,
       speed: allowStudentOverride ? speed : "slow",
     };
     await setPracticeConfig(next);
@@ -118,7 +141,9 @@ export function Select() {
   const sessionLength = classConfig?.sessionLength ?? DEFAULT_CLASS_CONFIG.sessionLength;
   const modeLabel = mode === "learn" ? t("practice.selection.modeLearn") : t("practice.selection.modeTest");
   const speedLabel = speed === "fast" ? t("practice.selection.speedFast") : t("practice.selection.speedSlow");
-  const selectedSetLabels = selectedSets.map(setId => t(`practice.sets.${setId}`));
+  const resolvedSelectedSets = expandAllProducts(selectedSets, allowedSets);
+  const labelSetIds = resolvedSelectedSets.includes("all_products") ? ["all_products"] : resolvedSelectedSets;
+  const selectedSetLabels = labelSetIds.map(setId => t(`practice.sets.${setId}`));
 
   if (loading) {
     return (
@@ -263,3 +288,8 @@ export function Select() {
     </div>
   );
 }
+
+
+
+
+
