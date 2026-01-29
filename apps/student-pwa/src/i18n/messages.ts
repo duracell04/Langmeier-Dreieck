@@ -151,7 +151,7 @@ export const messages = {
         speedFast: "Schnell",
         sessionLength: "Sitzung: {count} Aufgaben",
         start: "Beginnen",
-        lockedTitle: "Heute ?ben wir:",
+        lockedTitle: "Heute üben wir:",
         lockedNote: "Einstellungen sind durch die Lehrperson festgelegt.",
       },
       sets: {

@@ -608,7 +608,7 @@ export function App() {
                     checked={allowStudentOverride}
                     onChange={event => setAllowStudentOverride(event.target.checked)}
                   />
-                  Sch?ler d?rfen Auswahl ?ndern
+                  Schüler dürfen Auswahl ändern
                 </label>
               </div>
             </div>
@@ -642,7 +642,7 @@ export function App() {
                       </select>
                     </label>
                     <label className="grid gap-2 text-sm text-muted">
-                      Sitzungsl?nge
+                      Sitzungslänge
                       <select
                         className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-ink"
                         value={activeSettings.sessionLength}
@@ -721,7 +721,7 @@ export function App() {
                         }
                       >
                         <option value="default">Standard</option>
-                        <option value="single">Ein Feld f?r beide Faktoren</option>
+                        <option value="single">Ein Feld für beide Faktoren</option>
                       </select>
                     </label>
                   </div>
@@ -737,11 +737,11 @@ export function App() {
                         )
                       }
                     />
-                    Sch?ler d?rfen Auswahl ?ndern
+                    Schüler dürfen Auswahl ändern
                   </label>
                 </>
               ) : (
-                <div className="text-sm text-muted">Bitte eine Klasse ausw?hlen.</div>
+                <div className="text-sm text-muted">Bitte eine Klasse auswählen.</div>
               )}
               {saveStatus ? <div className="text-sm text-muted">{saveStatus}</div> : null}
             </div>

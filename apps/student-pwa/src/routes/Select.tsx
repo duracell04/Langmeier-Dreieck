@@ -234,7 +234,7 @@ export function Select() {
                   <div className="grid gap-3 text-sm text-muted-foreground">
                     <div className="text-sm text-muted-foreground">{t("practice.selection.lockedTitle")}</div>
                     <div className="text-base text-foreground">
-                      {modeLabel} ? {selectedSetLabels.join(" ? ")}
+                      {modeLabel} · {selectedSetLabels.join(" · ")}
                     </div>
                     {mode === "test" ? (
                       <div className="text-sm text-muted-foreground">
