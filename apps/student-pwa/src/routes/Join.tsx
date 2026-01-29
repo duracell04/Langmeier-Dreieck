@@ -8,7 +8,6 @@ import {
   type StoredIdentity,
 } from "../services/joinUseCases";
 import { useI18n } from "../i18n";
-import { LanguageToggle } from "../ui/LanguageToggle";
 
 const MARKERS = [
   { id: "primary", swatch: "bg-primary" },
@@ -39,7 +38,7 @@ export function Join() {
   const year = new Date().getFullYear();
   const copyright = t("common.copyright", { year, brand: t("common.brand") });
   const [code, setCode] = React.useState("");
-  const [identity, setIdentity] = React.useState<string | null>(null);
+  const [identity, setIdentity] = React.useState<string | null>(MARKERS[0].id);
   const [status, setStatus] = React.useState<"idle" | "joining" | "error">("idle");
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [stored, setStored] = React.useState<StoredIdentity | null>(null);
@@ -139,7 +138,6 @@ export function Join() {
         onCtaClick={() => {
           window.location.hash = "#/landing";
         }}
-        rightSlot={<LanguageToggle />}
       />
 
       <main className="flex-1">
@@ -156,7 +154,7 @@ export function Join() {
                 {stored ? (
                   <Card className="grid gap-2 bg-background p-4">
                     <div className="text-sm text-muted-foreground">{t("join.storedHint")}</div>
-                    <Button onClick={onContinue} disabled={status === "joining"}>
+                    <Button variant="ghost" size="sm" onClick={onContinue} disabled={status === "joining"}>
                       {t("join.storedAction")}
                     </Button>
                   </Card>
@@ -173,30 +171,6 @@ export function Join() {
                     maxLength={6}
                   />
                 </label>
-
-                <div className="grid gap-2">
-                  <div className="text-sm text-muted-foreground">{t("join.colorLabel")}</div>
-                  <div className="flex flex-wrap gap-2">
-                    {MARKERS.map(marker => {
-                      const selected = identity === marker.id;
-                      const labelKey = `join.markers.${marker.id}`;
-                      return (
-                        <Button
-                          key={marker.id}
-                          type="button"
-                          variant={selected ? "secondary" : "outline"}
-                          size="sm"
-                          className="gap-2"
-                          aria-pressed={selected}
-                          onClick={() => setIdentity(prev => (prev === marker.id ? null : marker.id))}
-                        >
-                          <span className={`h-3 w-3 rounded-full ${marker.swatch}`} aria-hidden="true" />
-                          <span>{t(labelKey)}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </div>
 
                 {!isOnline ? <div className="text-sm text-warning">{t("join.offline")}</div> : null}
                 {errorMessage ? <div className="text-sm text-warning">{errorMessage}</div> : null}

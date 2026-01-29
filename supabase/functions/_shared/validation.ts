@@ -15,6 +15,7 @@ export const ClassDefaultsSchema = z.object({
   sessionLength: z.union([z.literal(10), z.literal(25), z.literal(40)]),
   divisionEnabled: z.boolean(),
   squareMode: z.enum(["default", "single"]),
+  allowStudentOverride: z.boolean().optional().default(false),
 });
 
 export const JoinClassRequestSchema = z.object({

@@ -37,6 +37,7 @@ export interface ClassConfig {
   sessionLength: 10 | 25 | 40;
   divisionEnabled: boolean;
   squareMode: "default" | "single";
+  allowStudentOverride?: boolean;
 }
 
 export type PracticeSpeed = "slow" | "fast";
@@ -169,13 +170,16 @@ function isClassConfig(value: unknown): value is ClassConfig {
   const validSessionLength = item.sessionLength === 10 || item.sessionLength === 25 || item.sessionLength === 40;
   const validMode = item.defaultMode === "learn" || item.defaultMode === "test";
   const validSquare = item.squareMode === "default" || item.squareMode === "single";
+  const validOverride =
+    typeof item.allowStudentOverride === "boolean" || typeof item.allowStudentOverride === "undefined";
   return (
     typeof item.packId === "string" &&
     validMode &&
     isValidProductSets(item.productSets) &&
     validSessionLength &&
     typeof item.divisionEnabled === "boolean" &&
-    validSquare
+    validSquare &&
+    validOverride
   );
 }
 

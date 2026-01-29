@@ -51,7 +51,6 @@ import {
 import { createBaseEvent, recordEvent, syncPendingEvents, type EventContext } from "../services/practiceUseCases";
 import { sortProductSets } from "../services/productSets";
 import { useI18n } from "../i18n";
-import { LanguageToggle } from "../ui/LanguageToggle";
 
 const SUCCESS_DWELL_MS = 700;
 const REVEAL_DWELL_MS = 1600;
@@ -75,6 +74,7 @@ const DEFAULT_CLASS_CONFIG: ClassConfig = {
   sessionLength: 25,
   divisionEnabled: true,
   squareMode: "default",
+  allowStudentOverride: false,
 };
 const DEFAULT_PRACTICE_CONFIG: PracticeConfig = {
   mode: DEFAULT_CLASS_CONFIG.defaultMode,
@@ -162,7 +162,6 @@ export function Practice() {
   const [structureUsed, setStructureUsed] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
   const [elapsedMs, setElapsedMs] = React.useState(0);
-  const [syncStatus, setSyncStatus] = React.useState<"idle" | "syncing" | "error" | "ok">("idle");
   const [correctCount, setCorrectCount] = React.useState(0);
 
   const timers = React.useRef<number[]>([]);
@@ -193,12 +192,10 @@ export function Practice() {
   const runSync = React.useCallback(async () => {
     if (!eventContextRef.current) return;
     if (!navigator.onLine) return;
-    setSyncStatus("syncing");
     try {
       await syncPendingEvents(syncConfig, eventContextRef.current);
-      setSyncStatus("ok");
     } catch {
-      setSyncStatus("error");
+      // Best-effort sync; UI stays minimal.
     }
   }, [syncConfig]);
 
@@ -208,11 +205,6 @@ export function Practice() {
       syncTimer.current = null;
       runSync();
     }, 300);
-  }, [runSync]);
-
-  const handleSync = React.useCallback(() => {
-    if (!navigator.onLine) return;
-    runSync();
   }, [runSync]);
 
   React.useEffect(() => {
@@ -225,12 +217,6 @@ export function Practice() {
       clearTimers();
     };
   }, [clearTimers]);
-
-  React.useEffect(() => {
-    if (!isOnline) {
-      setSyncStatus("idle");
-    }
-  }, [isOnline]);
 
   React.useEffect(() => {
     let active = true;
@@ -250,11 +236,14 @@ export function Practice() {
     (async () => {
       if (!configReady) return;
       const baseConfig = classConfig ?? DEFAULT_CLASS_CONFIG;
+      const allowOverride = baseConfig.allowStudentOverride ?? false;
       const basePractice = practiceConfig ?? DEFAULT_PRACTICE_CONFIG;
-      const fallbackMode = basePractice.mode ?? baseConfig.defaultMode;
-      const fallbackSets = basePractice.productSets.length ? basePractice.productSets : baseConfig.productSets;
+      const fallbackMode = allowOverride ? (basePractice.mode ?? baseConfig.defaultMode) : baseConfig.defaultMode;
+      const fallbackSets = allowOverride
+        ? (basePractice.productSets.length ? basePractice.productSets : baseConfig.productSets)
+        : baseConfig.productSets;
       const orderedFallbackSets = sortProductSets(fallbackSets as ProductSetId[]);
-      const fallbackSpeed = basePractice.speed ?? DEFAULT_PRACTICE_CONFIG.speed;
+      const fallbackSpeed = allowOverride ? (basePractice.speed ?? DEFAULT_PRACTICE_CONFIG.speed) : "slow";
       const [deviceId, studentRef, classId] = await Promise.all([
         getDeviceId(),
         getStudentRef(),
@@ -767,23 +756,7 @@ export function Practice() {
             <span>{t("practice.correctCount", { count: correctCount })}</span>
           </div>
           {mode === "test" ? <div className="text-xs text-muted-foreground">{elapsedLabel}</div> : null}
-          <div className="flex items-center gap-2">
-            {!isOnline ? (
-              <Badge>{t("practice.status.offline")}</Badge>
-            ) : syncStatus === "syncing" ? (
-              <Badge>{t("practice.status.syncing")}</Badge>
-            ) : syncStatus === "error" ? (
-              <>
-                <Badge>{t("practice.status.syncError")}</Badge>
-                <Button variant="ghost" size="sm" onClick={handleSync}>
-                  {t("practice.status.retry")}
-                </Button>
-              </>
-            ) : (
-              <Badge>{t("practice.status.connected")}</Badge>
-            )}
-            <LanguageToggle className="ml-2" />
-          </div>
+          {!isOnline ? <Badge>{t("practice.status.offline")}</Badge> : null}
         </>
       }
       footer={

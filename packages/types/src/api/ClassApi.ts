@@ -13,6 +13,7 @@ export interface ClassDefaults {
   sessionLength: SessionLength;
   divisionEnabled: boolean;
   squareMode: SquareMode;
+  allowStudentOverride: boolean;
 }
 
 export interface JoinClassRequest {

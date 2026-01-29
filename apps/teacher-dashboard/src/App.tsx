@@ -28,6 +28,16 @@ interface KpiSummary {
   perStudent: Array<{ studentLabel: string; total: number; accuracy: number; reveals: number }>;
 }
 
+interface ClassSettings {
+  packId: string;
+  defaultMode: "learn" | "test";
+  productSets: ProductSetId[];
+  sessionLength: 10 | 25 | 40;
+  divisionEnabled: boolean;
+  squareMode: "default" | "single";
+  allowStudentOverride: boolean;
+}
+
 const PRODUCT_SET_OPTIONS: Array<{ id: ProductSetId; label: string }> = [
   { id: "products_3_4", label: "Produkte 3/4" },
   { id: "products_2", label: "Produkte 2" },
@@ -37,6 +47,17 @@ const PRODUCT_SET_OPTIONS: Array<{ id: ProductSetId; label: string }> = [
 ];
 
 const SESSION_LENGTHS = [10, 25, 40] as const;
+const PRODUCT_SET_ID_SET = new Set(PRODUCT_SET_OPTIONS.map(option => option.id));
+
+const DEFAULT_CLASS_SETTINGS: ClassSettings = {
+  packId: "core",
+  defaultMode: "learn",
+  productSets: ["products_3_4"],
+  sessionLength: 25,
+  divisionEnabled: true,
+  squareMode: "default",
+  allowStudentOverride: false,
+};
 
 function randomJoinCode(length = 6) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -45,6 +66,37 @@ function randomJoinCode(length = 6) {
     out += chars[Math.floor(Math.random() * chars.length)];
   }
   return out;
+}
+
+function normalizeClassSettings(raw: Record<string, unknown> | null | undefined): ClassSettings {
+  const base: ClassSettings = { ...DEFAULT_CLASS_SETTINGS };
+  if (!raw || typeof raw !== "object") return base;
+  const item = raw as Record<string, unknown>;
+  if (typeof item.packId === "string") base.packId = item.packId;
+  if (item.defaultMode === "learn" || item.defaultMode === "test") base.defaultMode = item.defaultMode;
+  if (Array.isArray(item.productSets)) {
+    const filtered = item.productSets.filter(
+      value => typeof value === "string" && PRODUCT_SET_ID_SET.has(value as ProductSetId)
+    ) as ProductSetId[];
+    if (filtered.length) base.productSets = filtered;
+  }
+  if (item.sessionLength === 10 || item.sessionLength === 25 || item.sessionLength === 40) {
+    base.sessionLength = item.sessionLength;
+  }
+  if (typeof item.divisionEnabled === "boolean") base.divisionEnabled = item.divisionEnabled;
+  if (item.squareMode === "default" || item.squareMode === "single") base.squareMode = item.squareMode;
+  if (typeof item.allowStudentOverride === "boolean") base.allowStudentOverride = item.allowStudentOverride;
+  return base;
+}
+
+function buildJoinUrl(baseUrl: string, joinCode: string): string {
+  const trimmed = baseUrl.trim().replace(/\/$/, "");
+  if (!trimmed || !joinCode) return "";
+  if (trimmed.includes("#")) {
+    const [origin] = trimmed.split("#");
+    return `${origin}#/join?code=${joinCode}`;
+  }
+  return `${trimmed}/#/join?code=${joinCode}`;
 }
 
 export function App() {
@@ -65,6 +117,13 @@ export function App() {
   const [divisionEnabled, setDivisionEnabled] = React.useState(true);
   const [squareMode, setSquareMode] = React.useState<"default" | "single">("default");
   const [productSets, setProductSets] = React.useState<ProductSetId[]>(["products_3_4"]);
+  const [allowStudentOverride, setAllowStudentOverride] = React.useState(false);
+  const [activeSettings, setActiveSettings] = React.useState<ClassSettings | null>(null);
+  const [savingSettings, setSavingSettings] = React.useState(false);
+  const [saveStatus, setSaveStatus] = React.useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
+  const saveTimerRef = React.useRef<number | null>(null);
+  const copyTimerRef = React.useRef<number | null>(null);
 
   const [kpis, setKpis] = React.useState<KpiSummary | null>(null);
   const [loadingKpis, setLoadingKpis] = React.useState(false);
@@ -85,6 +144,13 @@ export function App() {
     return () => {
       active = false;
       authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
     };
   }, []);
 
@@ -217,6 +283,11 @@ export function App() {
     setEntitlement(resolveEntitlement(selected?.settings ?? null));
   }, [activeClassId, classes]);
 
+  React.useEffect(() => {
+    const selected = classes.find(item => item.id === activeClassId) ?? null;
+    setActiveSettings(selected ? normalizeClassSettings(selected.settings ?? null) : null);
+  }, [activeClassId, classes]);
+
   const handleAuth = async () => {
     setAuthLoading(true);
     setAuthError(null);
@@ -257,6 +328,7 @@ export function App() {
         sessionLength,
         divisionEnabled,
         squareMode,
+        allowStudentOverride,
         paid: false,
       };
 
@@ -289,6 +361,58 @@ export function App() {
     setClassName("");
     await loadClasses();
     setLoadingClasses(false);
+  };
+
+  const handleSaveActiveClass = async () => {
+    if (!session || !activeClassId || !activeSettings) return;
+    if (activeSettings.productSets.length === 0) {
+      setSaveStatus("Mindestens ein Produktset wählen.");
+      return;
+    }
+    setSavingSettings(true);
+    setSaveStatus(null);
+
+    const settings = { ...activeSettings };
+    const { error } = await supabase
+      .from("classes")
+      .update({
+        settings,
+        pack_id: settings.packId,
+        default_mode: settings.defaultMode,
+        product_sets: settings.productSets,
+        session_length: settings.sessionLength,
+        division_enabled: settings.divisionEnabled,
+        square_mode: settings.squareMode,
+      })
+      .eq("id", activeClassId);
+
+    if (error) {
+      setSaveStatus("Speichern fehlgeschlagen.");
+      setSavingSettings(false);
+      return;
+    }
+
+    await loadClasses();
+    setSaveStatus("Gespeichert.");
+    setSavingSettings(false);
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      setSaveStatus(null);
+    }, 2000);
+  };
+
+  const handleCopy = async (value: string, label: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyStatus(`${label} kopiert.`);
+    } catch {
+      setCopyStatus(`${label} konnte nicht kopiert werden.`);
+    }
+    if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => {
+      setCopyStatus(null);
+    }, 2000);
   };
 
   const handleSignOut = async () => {
@@ -366,8 +490,7 @@ export function App() {
           window.location.port === "5174" ? ":5173" : window.location.port ? `:${window.location.port}` : ""
         }`
       : "";
-  const joinBase = (studentAppUrl || fallbackBase).replace(/\/$/, "");
-  const joinUrl = activeClass ? `${joinBase}/join?code=${activeClass.join_code}` : "";
+  const joinUrl = activeClass ? buildJoinUrl(studentAppUrl || fallbackBase, activeClass.join_code) : "";
 
   return (
     <main className="min-h-screen bg-bg text-ink font-sans">
@@ -400,7 +523,7 @@ export function App() {
               </Button>
             </div>
             <div className="grid gap-4 rounded-swiss border border-grid-border bg-bg px-4 py-4">
-              <div className="text-sm font-semibold text-ink">Standardeinstellungen</div>
+              <div className="text-sm font-semibold text-ink">Standardeinstellungen (neue Klasse)</div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-2 text-sm text-muted">
                   Modus
@@ -478,7 +601,149 @@ export function App() {
                     <option value="single">Ein Feld für beide Faktoren</option>
                   </select>
                 </label>
+                <label className="flex items-center gap-2 text-sm text-muted">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border border-grid-border"
+                    checked={allowStudentOverride}
+                    onChange={event => setAllowStudentOverride(event.target.checked)}
+                  />
+                  Sch?ler d?rfen Auswahl ?ndern
+                </label>
               </div>
+            </div>
+            <div className="grid gap-4 rounded-swiss border border-grid-border bg-bg px-4 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-ink">Einstellungen dieser Klasse</div>
+                <Button
+                  onClick={handleSaveActiveClass}
+                  disabled={!activeClass || !activeSettings || savingSettings || activeSettings.productSets.length === 0}
+                  variant="secondary"
+                >
+                  {savingSettings ? "Speichern..." : "Speichern"}
+                </Button>
+              </div>
+              {activeClass && activeSettings ? (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="grid gap-2 text-sm text-muted">
+                      Modus
+                      <select
+                        className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-ink"
+                        value={activeSettings.defaultMode}
+                        onChange={event =>
+                          setActiveSettings(prev =>
+                            prev ? { ...prev, defaultMode: event.target.value as "learn" | "test" } : prev
+                          )
+                        }
+                      >
+                        <option value="learn">Lernen</option>
+                        <option value="test">Test</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-2 text-sm text-muted">
+                      Sitzungsl?nge
+                      <select
+                        className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-ink"
+                        value={activeSettings.sessionLength}
+                        onChange={event =>
+                          setActiveSettings(prev =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  sessionLength: Number(event.target.value) as (typeof SESSION_LENGTHS)[number],
+                                }
+                              : prev
+                          )
+                        }
+                      >
+                        {SESSION_LENGTHS.map(value => (
+                          <option key={value} value={value}>
+                            {value} Aufgaben
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <div className="text-sm text-muted">Produktsets</div>
+                    <div className="flex flex-wrap gap-2">
+                      {PRODUCT_SET_OPTIONS.map(option => {
+                        const selected = activeSettings.productSets.includes(option.id);
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            className={`rounded-swiss border px-3 py-2 text-sm ${
+                              selected ? "border-primary bg-surface" : "border-grid-border bg-bg"
+                            }`}
+                            aria-pressed={selected}
+                            onClick={() => {
+                              setActiveSettings(prev => {
+                                if (!prev) return prev;
+                                return prev.productSets.includes(option.id)
+                                  ? { ...prev, productSets: prev.productSets.filter(item => item !== option.id) }
+                                  : { ...prev, productSets: [...prev.productSets, option.id] };
+                              });
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="flex items-center gap-2 text-sm text-muted">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border border-grid-border"
+                        checked={activeSettings.divisionEnabled}
+                        onChange={event =>
+                          setActiveSettings(prev =>
+                            prev ? { ...prev, divisionEnabled: event.target.checked } : prev
+                          )
+                        }
+                      />
+                      Division aktiv
+                    </label>
+                    <label className="grid gap-2 text-sm text-muted">
+                      Quadrate
+                      <select
+                        className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-ink"
+                        value={activeSettings.squareMode}
+                        onChange={event =>
+                          setActiveSettings(prev =>
+                            prev ? { ...prev, squareMode: event.target.value as "default" | "single" } : prev
+                          )
+                        }
+                      >
+                        <option value="default">Standard</option>
+                        <option value="single">Ein Feld f?r beide Faktoren</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm text-muted">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border border-grid-border"
+                      checked={activeSettings.allowStudentOverride}
+                      onChange={event =>
+                        setActiveSettings(prev =>
+                          prev ? { ...prev, allowStudentOverride: event.target.checked } : prev
+                        )
+                      }
+                    />
+                    Sch?ler d?rfen Auswahl ?ndern
+                  </label>
+                </>
+              ) : (
+                <div className="text-sm text-muted">Bitte eine Klasse ausw?hlen.</div>
+              )}
+              {saveStatus ? <div className="text-sm text-muted">{saveStatus}</div> : null}
             </div>
             {classError ? <div className="text-sm text-warning">{classError}</div> : null}
 
@@ -519,6 +784,21 @@ export function App() {
                 <div className="grid gap-2">
                   <div className="text-micro uppercase tracking-wide text-muted">Join-Code</div>
                   <div className="text-3xl font-semibold text-ink">{activeClass.join_code}</div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleCopy(activeClass.join_code, "Code")}
+                    >
+                      Code kopieren
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleCopy(joinUrl, "Link")}
+                      disabled={!joinUrl}
+                    >
+                      Link kopieren
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <div className="text-micro uppercase tracking-wide text-muted">Join-URL</div>
@@ -526,6 +806,7 @@ export function App() {
                     {joinUrl || "Studenten-URL fehlt. Bitte VITE_STUDENT_APP_URL setzen."}
                   </div>
                 </div>
+                {copyStatus ? <div className="text-sm text-muted">{copyStatus}</div> : null}
               </>
             ) : (
               <div className="text-sm text-muted">Keine Klasse gewählt.</div>

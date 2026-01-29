@@ -47,6 +47,7 @@ function classConfigFromRow(row: Record<string, unknown>) {
     sessionLength,
     divisionEnabled: row.division_enabled !== false,
     squareMode: row.square_mode === "single" ? "single" : "default",
+    allowStudentOverride: false,
   };
 }
 

@@ -14,6 +14,7 @@ const DEFAULT_CLASS_CONFIG: ClassConfig = {
   sessionLength: 25,
   divisionEnabled: true,
   squareMode: "default",
+  allowStudentOverride: false,
 };
 
 const DEFAULT_PRACTICE_CONFIG: PracticeConfig = {
@@ -58,20 +59,26 @@ export function Select() {
       }
 
       const baseConfig = storedConfig ?? DEFAULT_CLASS_CONFIG;
+      const allowOverride = baseConfig.allowStudentOverride ?? false;
+      const allowed = baseConfig.productSets.length ? baseConfig.productSets : DEFAULT_CLASS_CONFIG.productSets;
       const basePractice = storedPractice ?? {
         ...DEFAULT_PRACTICE_CONFIG,
         mode: baseConfig.defaultMode,
-        productSets: baseConfig.productSets,
+        productSets: allowed,
       };
 
       if (!active) return;
       setClassConfigState(baseConfig);
-      setMode(basePractice.mode);
-      setSpeed(basePractice.speed ?? "slow");
 
-      const allowed = baseConfig.productSets.length ? baseConfig.productSets : DEFAULT_CLASS_CONFIG.productSets;
-      const initial = basePractice.productSets.filter(setId => allowed.includes(setId));
-      setSelectedSets(sortProductSets(initial.length ? initial : allowed));
+      const resolvedMode = allowOverride ? basePractice.mode : baseConfig.defaultMode;
+      const resolvedSpeed = allowOverride ? (basePractice.speed ?? "slow") : "slow";
+      const initialSets = allowOverride
+        ? basePractice.productSets.filter(setId => allowed.includes(setId))
+        : allowed;
+
+      setMode(resolvedMode);
+      setSpeed(resolvedSpeed);
+      setSelectedSets(sortProductSets(initialSets.length ? initialSets : allowed));
       setLoading(false);
     })();
 
@@ -80,6 +87,7 @@ export function Select() {
     };
   }, []);
 
+  const allowStudentOverride = classConfig?.allowStudentOverride ?? false;
   const allowedSets = classConfig?.productSets ?? DEFAULT_CLASS_CONFIG.productSets;
   const orderedSets = PRODUCT_SET_ORDER.filter(setId => allowedSets.includes(setId));
 
@@ -95,16 +103,22 @@ export function Select() {
   };
 
   const onStart = async () => {
+    const baseConfig = classConfig ?? DEFAULT_CLASS_CONFIG;
     const next: PracticeConfig = {
-      mode,
-      productSets: sortProductSets(selectedSets.length ? selectedSets : allowedSets),
-      speed,
+      mode: allowStudentOverride ? mode : baseConfig.defaultMode,
+      productSets: sortProductSets(
+        allowStudentOverride ? (selectedSets.length ? selectedSets : allowedSets) : allowedSets
+      ),
+      speed: allowStudentOverride ? speed : "slow",
     };
     await setPracticeConfig(next);
     window.location.hash = "#/practice";
   };
 
   const sessionLength = classConfig?.sessionLength ?? DEFAULT_CLASS_CONFIG.sessionLength;
+  const modeLabel = mode === "learn" ? t("practice.selection.modeLearn") : t("practice.selection.modeTest");
+  const speedLabel = speed === "fast" ? t("practice.selection.speedFast") : t("practice.selection.speedSlow");
+  const selectedSetLabels = selectedSets.map(setId => t(`practice.sets.${setId}`));
 
   if (loading) {
     return (
@@ -150,69 +164,86 @@ export function Select() {
               </header>
 
               <Card raised className="grid gap-6 p-6 md:p-8">
-                <div className="grid gap-3">
-                  <div className="text-sm text-muted-foreground">{t("practice.selection.modeLabel")}</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      type="button"
-                      variant={mode === "learn" ? "secondary" : "outline"}
-                      onClick={() => setMode("learn")}
-                    >
-                      {t("practice.selection.modeLearn")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={mode === "test" ? "secondary" : "outline"}
-                      onClick={() => setMode("test")}
-                    >
-                      {t("practice.selection.modeTest")}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid gap-3">
-                  <div className="text-sm text-muted-foreground">{t("practice.selection.setsLabel")}</div>
-                  <div className="flex flex-wrap gap-2">
-                    {orderedSets.map(setId => {
-                      const selected = selectedSets.includes(setId);
-                      return (
+                {allowStudentOverride ? (
+                  <>
+                    <div className="grid gap-3">
+                      <div className="text-sm text-muted-foreground">{t("practice.selection.modeLabel")}</div>
+                      <div className="grid grid-cols-2 gap-3">
                         <Button
-                          key={setId}
                           type="button"
-                          variant={selected ? "secondary" : "outline"}
-                          size="sm"
-                          className="gap-2"
-                          aria-pressed={selected}
-                          onClick={() => toggleSet(setId)}
+                          variant={mode === "learn" ? "secondary" : "outline"}
+                          onClick={() => setMode("learn")}
                         >
-                          {t(`practice.sets.${setId}`)}
+                          {t("practice.selection.modeLearn")}
                         </Button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {mode === "test" ? (
-                  <div className="grid gap-3">
-                    <div className="text-sm text-muted-foreground">{t("practice.selection.speedLabel")}</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        type="button"
-                        variant={speed === "slow" ? "secondary" : "outline"}
-                        onClick={() => setSpeed("slow")}
-                      >
-                        {t("practice.selection.speedSlow")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={speed === "fast" ? "secondary" : "outline"}
-                        onClick={() => setSpeed("fast")}
-                      >
-                        {t("practice.selection.speedFast")}
-                      </Button>
+                        <Button
+                          type="button"
+                          variant={mode === "test" ? "secondary" : "outline"}
+                          onClick={() => setMode("test")}
+                        >
+                          {t("practice.selection.modeTest")}
+                        </Button>
+                      </div>
                     </div>
+
+                    <div className="grid gap-3">
+                      <div className="text-sm text-muted-foreground">{t("practice.selection.setsLabel")}</div>
+                      <div className="flex flex-wrap gap-2">
+                        {orderedSets.map(setId => {
+                          const selected = selectedSets.includes(setId);
+                          return (
+                            <Button
+                              key={setId}
+                              type="button"
+                              variant={selected ? "secondary" : "outline"}
+                              size="sm"
+                              className="gap-2"
+                              aria-pressed={selected}
+                              onClick={() => toggleSet(setId)}
+                            >
+                              {t(`practice.sets.${setId}`)}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {mode === "test" ? (
+                      <div className="grid gap-3">
+                        <div className="text-sm text-muted-foreground">{t("practice.selection.speedLabel")}</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button
+                            type="button"
+                            variant={speed === "slow" ? "secondary" : "outline"}
+                            onClick={() => setSpeed("slow")}
+                          >
+                            {t("practice.selection.speedSlow")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={speed === "fast" ? "secondary" : "outline"}
+                            onClick={() => setSpeed("fast")}
+                          >
+                            {t("practice.selection.speedFast")}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="grid gap-3 text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground">{t("practice.selection.lockedTitle")}</div>
+                    <div className="text-base text-foreground">
+                      {modeLabel} ? {selectedSetLabels.join(" ? ")}
+                    </div>
+                    {mode === "test" ? (
+                      <div className="text-sm text-muted-foreground">
+                        {t("practice.selection.speedLabel")}: {speedLabel}
+                      </div>
+                    ) : null}
+                    <div className="text-xs text-muted-foreground">{t("practice.selection.lockedNote")}</div>
                   </div>
-                ) : null}
+                )}
 
                 <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
                   <span>{t("practice.selection.sessionLength", { count: sessionLength })}</span>

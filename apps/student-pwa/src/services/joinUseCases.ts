@@ -45,6 +45,7 @@ const DEFAULT_CLASS_CONFIG: ClassConfig = {
   sessionLength: 25,
   divisionEnabled: true,
   squareMode: "default",
+  allowStudentOverride: false,
 };
 const PRODUCT_SET_ID_SET = new Set<ProductSetId>([
   "products_3_4",
@@ -68,7 +69,8 @@ function parseClassConfig(input: unknown): ClassConfig | null {
     (entry): entry is ProductSetId => typeof entry === "string" && PRODUCT_SET_ID_SET.has(entry as ProductSetId)
   );
   if (productSets.length === 0) return null;
-  return { ...item, productSets };
+  const allowStudentOverride = typeof item.allowStudentOverride === "boolean" ? item.allowStudentOverride : false;
+  return { ...item, productSets, allowStudentOverride };
 }
 
 export async function loadStoredIdentity(): Promise<StoredIdentity | null> {

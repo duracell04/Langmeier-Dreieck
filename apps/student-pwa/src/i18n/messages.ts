@@ -151,6 +151,8 @@ export const messages = {
         speedFast: "Schnell",
         sessionLength: "Sitzung: {count} Aufgaben",
         start: "Beginnen",
+        lockedTitle: "Heute ?ben wir:",
+        lockedNote: "Einstellungen sind durch die Lehrperson festgelegt.",
       },
       sets: {
         products_3_4: "Produkte aus 3 und 4 Reihen",
@@ -338,6 +340,8 @@ export const messages = {
         speedFast: "Fast",
         sessionLength: "Session: {count} tasks",
         start: "Start",
+        lockedTitle: "Today we'll practice:",
+        lockedNote: "Settings are set by your teacher.",
       },
       sets: {
         products_3_4: "Products from 3 and 4",
