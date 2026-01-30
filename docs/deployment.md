@@ -2,6 +2,10 @@
 
 This MVP deploys as two static Vite builds + Supabase for auth/sync.
 
+Hosting layout (recommended):
+- Teacher dashboard at `/` (root)
+- Student PWA at `/student`
+
 ## 1) Supabase
 
 1. Create a Supabase project (or run `supabase start` locally).
@@ -33,7 +37,13 @@ Teacher dashboard (`apps/teacher-dashboard/.env`):
 ```
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_STUDENT_APP_URL=
+VITE_STUDENT_APP_URL=/student
+```
+
+For local dev, set:
+
+```
+VITE_STUDENT_APP_URL=http://localhost:5173
 ```
 
 Optional paywall placeholder (teacher app only):
@@ -56,6 +66,29 @@ Artifacts:
 - `apps/teacher-dashboard/dist`
 
 Deploy each `dist` folder to any static host (Netlify, Vercel, Cloudflare Pages, S3, etc.).
+
+### Static host rewrites (examples)
+
+Because both apps use hash routing, only the base path needs to resolve to
+`index.html`.
+
+Netlify / Cloudflare Pages (`_redirects`):
+
+```
+/student/* /student/index.html 200
+/* /index.html 200
+```
+
+Vercel (`vercel.json`):
+
+```json
+{
+  "rewrites": [
+    { "source": "/student/(.*)", "destination": "/student/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
 
 ## 4) Paywall placeholder behavior
 

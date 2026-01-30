@@ -11,11 +11,15 @@ import { navigateToStudentJoin, navigateToTeacherDashboard } from "../utils";
 export interface HeroProps {
   onTeacherClick?: () => void;
   onStudentClick?: () => void;
+  teacherLabel?: string;
+  studentLabel?: string;
 }
 
 export function Hero({
   onTeacherClick = navigateToTeacherDashboard,
   onStudentClick = navigateToStudentJoin,
+  teacherLabel = "Create session",
+  studentLabel = "View demo",
 }: HeroProps) {
   return (
     <Section>
@@ -38,10 +42,10 @@ export function Hero({
               style={{ animationDelay: "0.2s" }}
             >
               <Button variant="hero" size="xl" onClick={onTeacherClick}>
-                Ich bin Lehrperson
+                {teacherLabel}
               </Button>
               <Button variant="hero-outline" size="xl" onClick={onStudentClick}>
-                Ich bin Schülerin oder Schüler
+                {studentLabel}
               </Button>
             </div>
             <p className="mt-6 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: "0.3s" }}>

@@ -6,11 +6,14 @@ import {
   DashboardSection,
   DataTable,
 } from "@triangle/ui-kit";
+// QR generation for classroom join links; data is only the join URL (no PII).
+import { toDataURL } from "qrcode";
 import { supabase } from "./services/supabaseClient";
 import type { ProductSetId } from "@triangle/types";
 import { createPaymentsClient, resolveEntitlement } from "./services/entitlements";
 import { PaywallGuard } from "./ui/PaywallGuard";
 import { PaywallModal } from "./ui/PaywallModal";
+import { normalizeBaseUrl } from "./utils/url";
 
 interface ClassRow {
   id: string;
@@ -90,13 +93,22 @@ function normalizeClassSettings(raw: Record<string, unknown> | null | undefined)
 }
 
 function buildJoinUrl(baseUrl: string, joinCode: string): string {
-  const trimmed = baseUrl.trim().replace(/\/$/, "");
+  const trimmed = normalizeBaseUrl(baseUrl);
   if (!trimmed || !joinCode) return "";
-  if (trimmed.includes("#")) {
-    const [origin] = trimmed.split("#");
-    return `${origin}#/join?code=${joinCode}`;
+  const code = encodeURIComponent(joinCode);
+  return `${trimmed}/#/join?code=${code}&autostart=1`;
+}
+
+function resolveDefaultStudentBase(): string {
+  if (typeof window === "undefined" || !window.location) return "";
+  const { hostname, port, protocol } = window.location;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    const resolvedPort = port === "5174" ? "5173" : port;
+    if (resolvedPort) {
+      return `${protocol}//${hostname}:${resolvedPort}`;
+    }
   }
-  return `${trimmed}/#/join?code=${joinCode}`;
+  return "/student";
 }
 
 export function App() {
@@ -122,6 +134,10 @@ export function App() {
   const [savingSettings, setSavingSettings] = React.useState(false);
   const [saveStatus, setSaveStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
+  const [qrOpen, setQrOpen] = React.useState(false);
+  const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(null);
+  const [qrError, setQrError] = React.useState<string | null>(null);
+  const [qrLoading, setQrLoading] = React.useState(false);
   const saveTimerRef = React.useRef<number | null>(null);
   const copyTimerRef = React.useRef<number | null>(null);
 
@@ -484,13 +500,29 @@ export function App() {
 
   const activeClass = classes.find(item => item.id === activeClassId);
   const studentAppUrl = (import.meta.env.VITE_STUDENT_APP_URL as string | undefined) ?? "";
-  const fallbackBase =
-    typeof window !== "undefined" && window.location
-      ? `${window.location.protocol}//${window.location.hostname}${
-          window.location.port === "5174" ? ":5173" : window.location.port ? `:${window.location.port}` : ""
-        }`
-      : "";
-  const joinUrl = activeClass ? buildJoinUrl(studentAppUrl || fallbackBase, activeClass.join_code) : "";
+  const studentBase = studentAppUrl || resolveDefaultStudentBase();
+  const joinUrl = activeClass ? buildJoinUrl(studentBase, activeClass.join_code) : "";
+
+  const generateQr = React.useCallback(async (value: string) => {
+    setQrLoading(true);
+    setQrError(null);
+    try {
+      const dataUrl = await toDataURL(value, { width: 320, margin: 1 });
+      setQrDataUrl(dataUrl);
+    } catch {
+      setQrError("QR konnte nicht erstellt werden.");
+    } finally {
+      setQrLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    setQrDataUrl(null);
+    setQrError(null);
+    if (qrOpen && joinUrl) {
+      void generateQr(joinUrl);
+    }
+  }, [generateQr, joinUrl, qrOpen]);
 
   return (
     <main className="min-h-screen bg-bg text-ink font-sans">
@@ -796,16 +828,36 @@ export function App() {
                       onClick={() => handleCopy(joinUrl, "Link")}
                       disabled={!joinUrl}
                     >
-                      Link kopieren
+                      Link (Start) kopieren
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setQrOpen(prev => !prev)}
+                      disabled={!joinUrl}
+                    >
+                      {qrOpen ? "QR ausblenden" : "QR anzeigen"}
                     </Button>
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <div className="text-micro uppercase tracking-wide text-muted">Join-URL</div>
+                  <div className="text-micro uppercase tracking-wide text-muted">Start-Link (Autostart)</div>
                   <div className="rounded-swiss border border-grid-border bg-surface px-3 py-2 text-sm text-ink break-all">
                     {joinUrl || "Studenten-URL fehlt. Bitte VITE_STUDENT_APP_URL setzen."}
                   </div>
                 </div>
+                {qrOpen ? (
+                  <div className="grid gap-2">
+                    <div className="text-micro uppercase tracking-wide text-muted">QR-Code (Start)</div>
+                    <div className="grid gap-2 rounded-swiss border border-grid-border bg-bg px-4 py-4 text-center">
+                      {qrLoading ? <div className="text-sm text-muted">Erstelle QR...</div> : null}
+                      {qrError ? <div className="text-sm text-warning">{qrError}</div> : null}
+                      {!qrLoading && !qrError && qrDataUrl ? (
+                        <img src={qrDataUrl} alt="QR Code fÃ¼r Klassenbeitritt" className="mx-auto h-56 w-56" />
+                      ) : null}
+                      <div className="text-xs text-muted">Scan startet direkt in der Ãœbung.</div>
+                    </div>
+                  </div>
+                ) : null}
                 {copyStatus ? <div className="text-sm text-muted">{copyStatus}</div> : null}
               </>
             ) : (

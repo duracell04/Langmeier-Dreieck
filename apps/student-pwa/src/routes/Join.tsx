@@ -19,20 +19,22 @@ const MARKERS = [
   { id: "ink", swatch: "bg-foreground" },
 ] as const;
 
-function readJoinCodeFromUrl(): string | null {
+function readJoinParams(): { code: string | null; autostart: boolean } {
   const url = new URL(window.location.href);
-  const fromSearch = url.searchParams.get("code");
-  if (fromSearch) return fromSearch;
-
+  const params = new URLSearchParams(url.search);
   if (url.hash.includes("?")) {
     const [, query] = url.hash.split("?");
-    const params = new URLSearchParams(query);
-    return params.get("code");
+    const hashParams = new URLSearchParams(query);
+    hashParams.forEach((value, key) => {
+      params.set(key, value);
+    });
   }
-  if (url.hash.startsWith("#/demo")) {
-    return PRIMARY_DEMO_JOIN_CODE;
+  let code = params.get("code");
+  if (!code && url.hash.startsWith("#/demo")) {
+    code = PRIMARY_DEMO_JOIN_CODE;
   }
-  return null;
+  const autostart = params.get("autostart") === "1";
+  return { code, autostart };
 }
 
 export function Join() {
@@ -46,6 +48,7 @@ export function Join() {
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [stored, setStored] = React.useState<StoredIdentity | null>(null);
   const [autoJoin, setAutoJoin] = React.useState(false);
+  const [autoStart, setAutoStart] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
   const [resumeSession, setResumeSession] = React.useState<PracticeSession | null>(null);
   const [resumeChecked, setResumeChecked] = React.useState(false);
@@ -86,13 +89,14 @@ export function Join() {
   }, []);
 
   React.useEffect(() => {
-    const urlCode = readJoinCodeFromUrl();
+    const { code: urlCode, autostart } = readJoinParams();
     if (!urlCode) return;
     setCode(urlCode.toUpperCase());
     setAutoJoin(true);
+    setAutoStart(autostart);
   }, []);
 
-  const onJoin = React.useCallback(async (overrideCode?: string) => {
+  const onJoin = React.useCallback(async (overrideCode?: string, options?: { autostart?: boolean }) => {
     const sourceCode = typeof overrideCode === "string" ? overrideCode : code;
     const normalized = sourceCode.trim().toUpperCase();
     if (!normalized) {
@@ -108,13 +112,18 @@ export function Join() {
     try {
       const result = await joinClass(normalized, identity);
       const allowOverride = result.classConfig.allowStudentOverride ?? false;
-      window.location.hash = allowOverride ? "#/select" : "#/practice";
+      const shouldAutostart = options?.autostart ?? autoStart;
+      if (allowOverride) {
+        window.location.hash = "#/select";
+      } else {
+        window.location.hash = shouldAutostart ? "#/practice" : "#/select";
+      }
     } catch {
       const offline = typeof navigator !== "undefined" && !navigator.onLine;
       setErrorMessage(offline ? t("join.errors.offline") : t("join.errors.joinFailed"));
       setStatus("error");
     }
-  }, [code, identity, t]);
+  }, [autoStart, code, identity, t]);
 
   const onJoinClick = React.useCallback(() => {
     onJoin();
@@ -126,9 +135,13 @@ export function Join() {
     if (status !== "idle") return;
     if (!resumeChecked) return;
     if (resumeSession) return;
-    onJoin();
-    setAutoJoin(false);
-  }, [autoJoin, code, onJoin, resumeChecked, resumeSession, status]);
+    if (!navigator.onLine) return;
+    const timer = window.setTimeout(() => {
+      onJoin(undefined, { autostart: autoStart });
+      setAutoJoin(false);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [autoJoin, autoStart, code, onJoin, resumeChecked, resumeSession, status]);
 
   const onContinue = React.useCallback(async () => {
     if (!stored) return;
@@ -141,7 +154,11 @@ export function Join() {
     try {
       const result = await joinClass(stored.joinCode, stored.identityMarker);
       const allowOverride = result.classConfig.allowStudentOverride ?? false;
-      window.location.hash = allowOverride ? "#/select" : "#/practice";
+      if (allowOverride) {
+        window.location.hash = "#/select";
+      } else {
+        window.location.hash = autoStart ? "#/practice" : "#/select";
+      }
     } catch {
       await clearStoredIdentity();
       setStored(null);
@@ -159,9 +176,9 @@ export function Join() {
     }
     setResumeSession(null);
     if (code.trim()) {
-      onJoin(code);
+      onJoin(code, { autostart: autoStart });
     }
-  }, [code, onJoin, resumeSession, sessionManager]);
+  }, [autoStart, code, onJoin, resumeSession, sessionManager]);
 
   return (
     <div className="min-h-screen bg-bg text-foreground font-sans flex flex-col">
@@ -213,7 +230,11 @@ export function Join() {
                   {t("join.codeLabel")}
                   <TextInput
                     value={code}
-                    onChange={event => setCode(event.target.value.toUpperCase())}
+                    onChange={event => {
+                      setCode(event.target.value.toUpperCase());
+                      if (autoJoin) setAutoJoin(false);
+                      if (autoStart) setAutoStart(false);
+                    }}
                     placeholder={t("join.codePlaceholder")}
                     autoComplete="off"
                     inputMode="text"

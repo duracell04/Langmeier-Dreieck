@@ -14,11 +14,13 @@ const root = createRoot(rootEl);
 
 function renderRoute() {
   const hash = window.location.hash || "#/";
-  const view = hash.startsWith("#/landing")
-    ? <Landing />
+  const view = hash.startsWith("#/app")
+    ? <App />
     : hash.startsWith("#/style-guide")
       ? <StyleGuide />
-      : <App />;
+      : hash.startsWith("#/landing") || hash === "#/"
+        ? <Landing />
+        : <Landing />;
   root.render(view);
 }
 
